@@ -14,6 +14,17 @@
     background: radial-gradient(80% 60% at 20% 10%, #20283a 0%, #0f1115 55%),
       radial-gradient(70% 50% at 80% 20%, #1a2a2f 0%, #0f1115 60%);
   }
+
+  .app::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/></filter><rect width='120' height='120' filter='url(%23n)' opacity='0.12'/></svg>");
+    opacity: 0.15;
+    mix-blend-mode: soft-light;
+    pointer-events: none;
+    z-index: -2;
+  }
 }
 
 @layer components {
@@ -29,6 +40,7 @@
 
   .hero h1 {
     @apply my-2 tracking-[-0.02em] text-[clamp(28px,3.5vw,44px)];
+    font-family: "Chakra Petch", "Space Grotesk", sans-serif;
   }
 
   .hero p {
@@ -88,16 +100,18 @@
     background: linear-gradient(135deg, rgba(20, 26, 39, 0.9), rgba(10, 14, 24, 0.9));
     box-shadow:
       0 14px 30px rgba(0, 0, 0, 0.35),
-      inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      inset 0 -12px 24px rgba(3, 10, 20, 0.4);
     transform-style: preserve-3d;
     transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
+    backdrop-filter: blur(10px);
   }
 
   .card::before {
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(120deg, rgba(88, 208, 255, 0.18), transparent 40%);
+    background: linear-gradient(120deg, rgba(88, 208, 255, 0.24), transparent 45%);
     opacity: 0;
     transition: opacity 0.35s ease;
   }
@@ -110,6 +124,14 @@
     border-radius: 18px;
     opacity: 0.45;
     pointer-events: none;
+    background: linear-gradient(
+      120deg,
+      transparent 20%,
+      rgba(255, 255, 255, 0.06) 45%,
+      transparent 70%
+    );
+    transform: translateX(-120%);
+    transition: transform 1.2s ease;
   }
 
   .card:hover {
@@ -122,6 +144,10 @@
 
   .card:hover::before {
     opacity: 1;
+  }
+
+  .card:hover::after {
+    transform: translateX(120%);
   }
 
   .card h2 {
@@ -199,18 +225,29 @@
 
   label {
     @apply flex flex-col text-xs text-muted gap-1.5;
+    letter-spacing: 0.02em;
   }
 
   input {
     @apply px-3 py-2.5 rounded-[10px] border border-border bg-[#121621] text-text text-sm;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
 
   select {
     @apply px-3 py-2.5 rounded-[10px] border border-border bg-[#121621] text-text text-sm;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  input:focus,
+  select:focus {
+    outline: none;
+    border-color: rgba(88, 208, 255, 0.6);
+    box-shadow: 0 0 0 2px rgba(88, 208, 255, 0.2);
   }
 
   button {
     @apply px-3.5 py-2.5 rounded-xl border-0 bg-accent text-[#10141c] font-semibold cursor-pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
 
   button:disabled {
@@ -219,6 +256,11 @@
 
   button.ghost {
     @apply bg-transparent border border-border text-text;
+  }
+
+  button.ghost:hover {
+    box-shadow: 0 10px 24px rgba(7, 12, 24, 0.35);
+    transform: translateY(-1px);
   }
 
   .hint {
