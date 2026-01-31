@@ -331,8 +331,12 @@ export default function App() {
   const t = (key: keyof (typeof I18N)["zh"]) => I18N[lang][key];
 
   const canTransact = Boolean(account?.address && packageId);
-  const selectedCreature = creatures.find((c) => c.id === creatureId);
-  const selectedCreatureB = creatures.find((c) => c.id === creatureIdB);
+  const selectedCreature =
+    creatures.find((c) => c.id === creatureId) ||
+    arenaCreatures.find((c) => c.id === creatureId || c.key === creatureId);
+  const selectedCreatureB =
+    creatures.find((c) => c.id === creatureIdB) ||
+    arenaCreatures.find((c) => c.id === creatureIdB || c.key === creatureIdB);
   const nextStageRequiredExp =
     selectedCreature?.stage != null ? (selectedCreature.stage + 1) * 100 : undefined;
   const canEvolve =
