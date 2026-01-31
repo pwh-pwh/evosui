@@ -75,6 +75,7 @@ type ArenaItem = {
 type ArenaCreatureItem = {
   id: string;
   owner?: string;
+  key?: string;
   level?: number;
   exp?: number;
   stage?: number;
@@ -436,7 +437,7 @@ export default function App() {
   }
 
   async function loadArenaCreatures() {
-    if (!arenaId || !account?.address) {
+    if (!arenaId) {
       setArenaCreatures([]);
       return;
     }
@@ -463,18 +464,70 @@ export default function App() {
         setArenaCreatures([]);
         return;
       }
-      const fieldsResp = await client.getDynamicFields({ parentId: tableId, limit: 50 });
-      const creatureIds = fieldsResp.data
+      const parents = [tableId];
+      if (tableId !== arenaId) parents.push(arenaId);
+      const dynamicPages = await Promise.all(
+        parents.map((parentId) => client.getDynamicFields({ parentId, limit: 50 }))
+      );
+      const entries = dynamicPages
+        .flatMap((page) => page.data)
         .map((entry) => {
-          const value = (entry.name as { value?: unknown })?.value;
-          if (typeof value === "string") return value;
-          const idValue = (value as { id?: string })?.id;
-          if (typeof idValue === "string") return idValue;
-          const direct = (entry.name as { id?: string })?.id;
-          if (typeof direct === "string") return direct;
-          return null;
+          const name = entry.name as {
+            value?: unknown;
+            id?: unknown;
+          };
+          const value = typeof name === "string" ? name : name?.value;
+          const key =
+            typeof value === "string"
+              ? value
+              : typeof (value as { id?: string })?.id === "string"
+              ? (value as { id?: string }).id
+              : typeof name?.id === "string"
+              ? name.id
+              : typeof (name?.id as { id?: string })?.id === "string"
+              ? (name.id as { id?: string }).id
+              : null;
+          if (!key) return null;
+          return {
+            key,
+            objectId: entry.objectId,
+            type: entry.type,
+            objectType: (entry as { objectType?: string }).objectType,
+          };
         })
-        .filter((id): id is string => Boolean(id));
+        .filter(
+          (entry): entry is { key: string; objectId: string; type: string; objectType?: string } =>
+            Boolean(entry?.key && entry.objectId)
+        );
+      if (entries.length === 0) {
+        setArenaCreatures([]);
+        return;
+      }
+      const keyByObjectId = new Map(entries.map((entry) => [entry.objectId, entry.key]));
+      let creatureIds = entries
+        .filter(
+          (entry) =>
+            entry.type === "DynamicObject" ||
+            (entry.objectType && entry.objectType.includes("::Creature"))
+        )
+        .map((entry) => entry.objectId)
+        .filter(Boolean);
+      if (creatureIds.length === 0) {
+        const dynamicObjs = await client.multiGetObjects({
+          ids: entries.map((entry) => entry.objectId),
+          options: { showContent: true },
+        });
+        creatureIds = dynamicObjs
+          .map((obj) => {
+            const content = obj.data?.content as
+              | { dataType: "moveObject"; fields?: Record<string, unknown> }
+              | undefined;
+            const fields = content?.dataType === "moveObject" ? content.fields : undefined;
+            const valueField = fields?.value as { id?: string } | undefined;
+            return typeof valueField?.id === "string" ? valueField.id : null;
+          })
+          .filter((id): id is string => Boolean(id));
+      }
       if (creatureIds.length === 0) {
         setArenaCreatures([]);
         return;
@@ -496,7 +549,7 @@ export default function App() {
           const exp = typeof fields.exp === "string" ? Number(fields.exp) : undefined;
           const stage = typeof fields.stage === "string" ? Number(fields.stage) : undefined;
           const genomeHex = extractGenomeHex(fields);
-          return { id, owner, level, exp, stage, genomeHex };
+          return { id, owner, key: keyByObjectId.get(id) ?? id, level, exp, stage, genomeHex };
         })
         .filter((item): item is ArenaCreatureItem => Boolean(item));
       setArenaCreatures(items);
@@ -1116,10 +1169,16 @@ export default function App() {
                         </div>
                       </div>
                       <div className="actions">
-                        <button className="ghost" onClick={() => setCreatureId(item.id)}>
+                        <button
+                          className="ghost"
+                          onClick={() => setCreatureId(item.key ?? item.id)}
+                        >
                           {t("setA")}
                         </button>
-                        <button className="ghost" onClick={() => setCreatureIdB(item.id)}>
+                        <button
+                          className="ghost"
+                          onClick={() => setCreatureIdB(item.key ?? item.id)}
+                        >
                           {t("setB")}
                         </button>
                       </div>
