@@ -101,6 +101,7 @@ export default function App() {
   const [creatureError, setCreatureError] = useState("");
   const [battleHistory, setBattleHistory] = useState<BattleRecord[]>([]);
   const [activeHistoryId, setActiveHistoryId] = useState<string | null>(null);
+  const [battleAnimating, setBattleAnimating] = useState(false);
   const [kind, setKind] = useState(2);
   const [rarity, setRarity] = useState(2);
   const [power, setPower] = useState(100);
@@ -113,6 +114,14 @@ export default function App() {
   const [creatureJson, setCreatureJson] = useState<string>("");
 
   const canTransact = Boolean(account?.address && packageId);
+  const selectedCreature = creatures.find((c) => c.id === creatureId);
+  const selectedCreatureB = creatures.find((c) => c.id === creatureIdB);
+  const nextStageRequiredExp =
+    selectedCreature?.stage != null ? (selectedCreature.stage + 1) * 100 : undefined;
+  const canEvolve =
+    selectedCreature?.exp != null && nextStageRequiredExp != null
+      ? selectedCreature.exp >= nextStageRequiredExp
+      : false;
 
   const headerStatus = useMemo(() => {
     if (!account?.address) return "Disconnected";
@@ -224,6 +233,7 @@ export default function App() {
       setResult({ error: "请先选择 A/B Creature。" });
       return;
     }
+    setBattleAnimating(true);
     try {
       const tx = buildBattleTx(packageId, creatureId, creatureIdB);
       const res = await signAndExecute({ transactionBlock: tx });
@@ -231,6 +241,8 @@ export default function App() {
       await loadBattleEvents();
     } catch (e) {
       setResult({ error: (e as Error).message });
+    } finally {
+      setTimeout(() => setBattleAnimating(false), 900);
     }
   }
 
@@ -492,9 +504,19 @@ export default function App() {
           <button onClick={() => exec(() => buildFeedTx(packageId, creatureId, foodExp))}>
             喂养
           </button>
-          <button onClick={() => exec(() => buildEvolveTx(packageId, creatureId))}>
+          <div className="hint">
+            下一阶段所需经验：{" "}
+            {nextStageRequiredExp != null ? nextStageRequiredExp : "-"}
+          </div>
+          <button
+            disabled={!canEvolve}
+            onClick={() => exec(() => buildEvolveTx(packageId, creatureId))}
+          >
             进化
           </button>
+          {!canEvolve && creatureId ? (
+            <div className="hint">经验不足，先喂养提升 EXP。</div>
+          ) : null}
           <label>
             Mutation Seed
             <input
@@ -511,6 +533,31 @@ export default function App() {
         <div className="card">
           <h2>对战</h2>
           <p className="hint">同一钱包拥有两只 Creature 才可对战。</p>
+          <div className={`battle-stage ${battleAnimating ? "is-animating" : ""}`}>
+            <div className="battle-orb a">
+              {selectedCreature ? (
+                <CreatureAvatar
+                  genomeHex={selectedCreature.genomeHex ?? "0x"}
+                  seedHex={selectedCreature.id}
+                  level={selectedCreature.level ?? 1}
+                  stage={selectedCreature.stage ?? 0}
+                  size={40}
+                />
+              ) : null}
+            </div>
+            <div className="battle-orb b">
+              {selectedCreatureB ? (
+                <CreatureAvatar
+                  genomeHex={selectedCreatureB.genomeHex ?? "0x"}
+                  seedHex={selectedCreatureB.id}
+                  level={selectedCreatureB.level ?? 1}
+                  stage={selectedCreatureB.stage ?? 0}
+                  size={40}
+                />
+              ) : null}
+            </div>
+            <div className="battle-spark" />
+          </div>
           <button onClick={battleWithHistory}>发起对战</button>
           <p className="hint">对战记录来自链上事件（需合约已升级）。</p>
         </div>

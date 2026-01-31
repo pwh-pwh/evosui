@@ -73,6 +73,10 @@
     @apply px-3.5 py-2.5 rounded-xl border-0 bg-accent text-[#10141c] font-semibold cursor-pointer;
   }
 
+  button:disabled {
+    @apply bg-[#2a3142] text-muted cursor-not-allowed;
+  }
+
   button.ghost {
     @apply bg-transparent border border-border text-text;
   }
@@ -184,6 +188,44 @@
     @apply grid gap-2.5 items-center p-2.5 rounded-xl bg-[#0f141f] border border-border;
     grid-template-columns: auto auto 1fr auto auto;
   }
+
+  .battle-stage {
+    @apply relative w-full h-24 rounded-2xl border border-border bg-[#0f141f] overflow-hidden flex items-center justify-center;
+  }
+
+  .battle-orb {
+    @apply absolute w-12 h-12 rounded-full overflow-hidden flex items-center justify-center;
+    background: radial-gradient(circle at 30% 30%, #22f4b3, #0f172a);
+    box-shadow: 0 0 18px rgba(34, 244, 179, 0.4);
+  }
+
+  .battle-orb.a {
+    left: 18%;
+  }
+
+  .battle-orb.b {
+    right: 18%;
+    background: radial-gradient(circle at 30% 30%, #ffb347, #1f2937);
+    box-shadow: 0 0 18px rgba(255, 179, 71, 0.45);
+  }
+
+  .battle-spark {
+    @apply absolute w-2 h-2 rounded-full opacity-0;
+    background: #ffffff;
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.8);
+  }
+
+  .battle-stage.is-animating .battle-orb.a {
+    animation: orb-left 0.9s ease-in-out;
+  }
+
+  .battle-stage.is-animating .battle-orb.b {
+    animation: orb-right 0.9s ease-in-out;
+  }
+
+  .battle-stage.is-animating .battle-spark {
+    animation: spark 0.9s ease-in-out;
+  }
 }
 
 @layer utilities {
@@ -205,5 +247,44 @@
       grid-template-columns: 1fr;
       @apply items-start;
     }
+  }
+}
+
+@keyframes orb-left {
+  0% {
+    transform: translateX(0) scale(1);
+  }
+  45% {
+    transform: translateX(90%) scale(1.15);
+  }
+  100% {
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes orb-right {
+  0% {
+    transform: translateX(0) scale(1);
+  }
+  45% {
+    transform: translateX(-90%) scale(1.15);
+  }
+  100% {
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes spark {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.6);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.6);
   }
 }
