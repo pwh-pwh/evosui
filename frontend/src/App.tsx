@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   ConnectButton,
   useCurrentAccount,
@@ -801,41 +802,76 @@ export default function App() {
 
   return (
     <div className="app">
-      {showLanding ? (
-        <div className="launch-screen">
-          <div className="launch-bg">
-            <div className="launch-orb orb-a" />
-            <div className="launch-orb orb-b" />
-            <div className="launch-orb orb-c" />
-            <div className="launch-flow" />
-            <div className="launch-flow flow-2" />
-          </div>
-          <div className="launch-content">
-            <div className="launch-text">
-              <div className="launch-tag">{t("tag")}</div>
-              <h1>{t("landingTitle")}</h1>
-              <p>{t("landingSubtitle")}</p>
-              <div className="launch-note">{t("landingNote")}</div>
-              <button className="launch-cta" onClick={() => setShowLanding(false)}>
-                {t("landingStart")}
-              </button>
+      <AnimatePresence>
+        {showLanding ? (
+          <motion.div
+            className="launch-screen"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <div className="launch-bg">
+              <motion.div
+                className="launch-orb orb-a"
+                animate={{ y: [0, 18, 0], x: [0, -8, 0] }}
+                transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+              />
+              <motion.div
+                className="launch-orb orb-b"
+                animate={{ y: [0, -20, 0], x: [0, 10, 0] }}
+                transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
+              />
+              <motion.div
+                className="launch-orb orb-c"
+                animate={{ y: [0, 14, 0] }}
+                transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
+              />
+              <div className="launch-flow" />
+              <div className="launch-flow flow-2" />
             </div>
-            <div className="launch-pets">
-              {landingCreatures.map((pet, idx) => (
-                <div key={`${pet.seedHex}-${idx}`} className="launch-pet">
-                  <CreatureAvatar
-                    genomeHex={pet.genomeHex}
-                    seedHex={pet.seedHex}
-                    level={pet.level}
-                    stage={pet.stage}
-                    size={110}
-                  />
-                </div>
-              ))}
+            <div className="launch-content">
+              <motion.div
+                className="launch-text"
+                initial={{ y: 24, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+              >
+                <div className="launch-tag">{t("tag")}</div>
+                <h1>{t("landingTitle")}</h1>
+                <p>{t("landingSubtitle")}</p>
+                <div className="launch-note">{t("landingNote")}</div>
+                <motion.button
+                  className="launch-cta"
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setShowLanding(false)}
+                >
+                  {t("landingStart")}
+                </motion.button>
+              </motion.div>
+              <div className="launch-pets">
+                {landingCreatures.map((pet, idx) => (
+                  <motion.div
+                    key={`${pet.seedHex}-${idx}`}
+                    className="launch-pet"
+                    initial={{ y: 16, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.15 * idx, duration: 0.7 }}
+                  >
+                    <CreatureAvatar
+                      genomeHex={pet.genomeHex}
+                      seedHex={pet.seedHex}
+                      level={pet.level}
+                      stage={pet.stage}
+                      size={110}
+                    />
+                  </motion.div>
+                ))}
+              </div>
             </div>
-          </div>
-        </div>
-      ) : null}
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
       <header className="hero">
         <div>
           <div className="tag">{t("tag")}</div>
@@ -905,27 +941,21 @@ export default function App() {
           {arenas.length === 0 ? (
             <p className="hint">{t("noArenas")}</p>
           ) : (
-            <div className="list compact">
-              {arenas.map((arena) => (
-                <div key={arena.id} className="list-item">
-                  <div className="list-left">
-                    <div className="mono">{arena.id}</div>
-                  </div>
-                  <div className="actions">
-                    <button
-                      className="ghost"
-                      onClick={() => setArenaId(arena.id)}
-                    >
-                      {t("selectArena")}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <label>
+              {t("selectArena")}
+              <select
+                value={arenaId}
+                onChange={(e) => setArenaId(e.target.value)}
+              >
+                <option value="">{t("noArenas")}</option>
+                {arenas.map((arena) => (
+                  <option key={arena.id} value={arena.id}>
+                    {arena.id}
+                  </option>
+                ))}
+              </select>
+            </label>
           )}
-          <button className="ghost" onClick={loadCreature}>
-            {t("readCreature")}
-          </button>
         </div>
 
         <div className="card">

@@ -72,6 +72,10 @@
     @apply px-3 py-2.5 rounded-[10px] border border-border bg-[#121621] text-text text-sm;
   }
 
+  select {
+    @apply px-3 py-2.5 rounded-[10px] border border-border bg-[#121621] text-text text-sm;
+  }
+
   button {
     @apply px-3.5 py-2.5 rounded-xl border-0 bg-accent text-[#10141c] font-semibold cursor-pointer;
   }
