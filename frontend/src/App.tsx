@@ -444,9 +444,14 @@ export default function App() {
       const tx = buildMintTx(packageId, genomeHex, account.address);
       const res = await signAndExecute({ transaction: tx });
       setResult({ digest: res?.digest, raw: res });
-      if (res?.digest) {
+      const digest =
+        res?.digest ||
+        (res as { transactionDigest?: string })?.transactionDigest ||
+        (res as { effects?: { transactionDigest?: string } })?.effects?.transactionDigest;
+      let createdId: string | undefined;
+      if (digest) {
         const txBlock = await client.getTransactionBlock({
-          digest: res.digest,
+          digest,
           options: { showObjectChanges: true },
         });
         const created = txBlock.objectChanges?.find(
@@ -457,20 +462,24 @@ export default function App() {
             change.objectType.includes("::evosui::Creature")
         );
         if (created && "objectId" in created) {
-          const item: CreatureItem = {
-            id: String(created.objectId),
-            level: 1,
-            exp: 0,
-            stage: 0,
-            genomeHex,
-          };
-          setMintedCreature(item);
-          setShowMintFx(true);
-          setCreatureId(String(created.objectId));
-          loadCreatures();
-          setTimeout(() => setShowMintFx(false), 2600);
+          createdId = String(created.objectId);
         }
       }
+      const items = await loadCreatures();
+      const fallback =
+        items.find((c) => c.genomeHex?.toLowerCase() === genomeHex.toLowerCase()) ||
+        items[0];
+      const item: CreatureItem = {
+        id: createdId ?? fallback?.id ?? "pending",
+        level: fallback?.level ?? 1,
+        exp: fallback?.exp ?? 0,
+        stage: fallback?.stage ?? 0,
+        genomeHex: fallback?.genomeHex ?? genomeHex,
+      };
+      setMintedCreature(item);
+      setShowMintFx(true);
+      if (createdId) setCreatureId(createdId);
+      setTimeout(() => setShowMintFx(false), 2600);
     } catch (e) {
       setResult({ error: (e as Error).message });
     }
@@ -793,7 +802,7 @@ export default function App() {
   }
 
   async function loadCreatures() {
-    if (!account?.address || !packageId) return;
+    if (!account?.address || !packageId) return [];
     try {
       setCreatureError("");
       const resp = await client.getOwnedObjects({
@@ -822,8 +831,10 @@ export default function App() {
         })
         .filter((item): item is CreatureItem => Boolean(item));
       setCreatures(items);
+      return items;
     } catch (e) {
       setCreatureError((e as Error).message);
+      return [];
     }
   }
 
