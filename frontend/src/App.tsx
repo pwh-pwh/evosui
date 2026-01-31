@@ -107,6 +107,10 @@ const I18N = {
     withdraw: "取回",
     loading: "加载中…",
     loadFailed: "加载失败：",
+    landingTitle: "EvoSui 生命流",
+    landingSubtitle: "每个生命体都由链上基因实时生成，在流动的 Sui 里进化。",
+    landingStart: "进入世界",
+    landingNote: "随机基因驱动的独特生物 · 链上成长与对战",
     myCreatures: "我的 Creature",
     refreshList: "刷新列表",
     errorPrefix: "错误：",
@@ -205,6 +209,10 @@ const I18N = {
     withdraw: "Withdraw",
     loading: "Loading…",
     loadFailed: "Load failed: ",
+    landingTitle: "EvoSui Bioflow",
+    landingSubtitle: "Every creature is generated from on-chain genes, evolving within Sui’s flow.",
+    landingStart: "Enter World",
+    landingNote: "Unique creatures · On-chain growth & battles",
     myCreatures: "My Creatures",
     refreshList: "Refresh List",
     errorPrefix: "Error: ",
@@ -323,6 +331,7 @@ export default function App() {
     const saved = localStorage.getItem("evosui.lang");
     return saved === "en" || saved === "zh" ? saved : "zh";
   });
+  const [showLanding, setShowLanding] = useState(true);
   const [packageId, setPackageId] = useState(DEFAULT_PACKAGE_ID);
   const [arenaId, setArenaId] = useState("");
   const [genomeHex, setGenomeHex] = useState("0x010203");
@@ -355,6 +364,19 @@ export default function App() {
   }, [lang]);
 
   const t = (key: keyof (typeof I18N)["zh"]) => I18N[lang][key];
+
+  const landingCreatures = useMemo(() => {
+    const randomHex = (len: number) =>
+      `0x${Array.from({ length: len })
+        .map(() => Math.floor(Math.random() * 256).toString(16).padStart(2, "0"))
+        .join("")}`;
+    return Array.from({ length: 4 }).map((_, idx) => ({
+      genomeHex: randomHex(6 + idx),
+      seedHex: randomHex(8),
+      level: 1 + (idx % 3),
+      stage: idx % 2,
+    }));
+  }, []);
 
   const canTransact = Boolean(account?.address && packageId);
   const selectedCreature =
@@ -779,6 +801,41 @@ export default function App() {
 
   return (
     <div className="app">
+      {showLanding ? (
+        <div className="launch-screen">
+          <div className="launch-bg">
+            <div className="launch-orb orb-a" />
+            <div className="launch-orb orb-b" />
+            <div className="launch-orb orb-c" />
+            <div className="launch-flow" />
+            <div className="launch-flow flow-2" />
+          </div>
+          <div className="launch-content">
+            <div className="launch-text">
+              <div className="launch-tag">{t("tag")}</div>
+              <h1>{t("landingTitle")}</h1>
+              <p>{t("landingSubtitle")}</p>
+              <div className="launch-note">{t("landingNote")}</div>
+              <button className="launch-cta" onClick={() => setShowLanding(false)}>
+                {t("landingStart")}
+              </button>
+            </div>
+            <div className="launch-pets">
+              {landingCreatures.map((pet, idx) => (
+                <div key={`${pet.seedHex}-${idx}`} className="launch-pet">
+                  <CreatureAvatar
+                    genomeHex={pet.genomeHex}
+                    seedHex={pet.seedHex}
+                    level={pet.level}
+                    stage={pet.stage}
+                    size={110}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
       <header className="hero">
         <div>
           <div className="tag">{t("tag")}</div>

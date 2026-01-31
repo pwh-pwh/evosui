@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -7,7 +9,8 @@
     @apply box-border;
   }
   body {
-    @apply m-0 font-sans text-text min-h-screen;
+    @apply m-0 text-text min-h-screen;
+    font-family: "Space Grotesk", "Segoe UI", sans-serif;
     background: radial-gradient(80% 60% at 20% 10%, #20283a 0%, #0f1115 55%),
       radial-gradient(70% 50% at 80% 20%, #1a2a2f 0%, #0f1115 60%);
   }
@@ -265,6 +268,115 @@
     border: 1px dashed rgba(255, 255, 255, 0.2);
     animation: rings 1.2s linear infinite;
   }
+
+  .launch-screen {
+    @apply fixed inset-0 z-40 flex items-center justify-center overflow-hidden;
+    background: radial-gradient(80% 70% at 15% 20%, rgba(57, 211, 255, 0.2), transparent 60%),
+      radial-gradient(90% 80% at 80% 10%, rgba(105, 70, 255, 0.25), transparent 65%),
+      linear-gradient(135deg, #08101f 0%, #05070d 70%);
+  }
+
+  .launch-bg {
+    @apply absolute inset-0;
+  }
+
+  .launch-orb {
+    @apply absolute rounded-full blur-2xl opacity-70;
+    background: radial-gradient(circle at 30% 30%, rgba(91, 255, 235, 0.8), rgba(23, 40, 68, 0.2));
+    animation: float 12s ease-in-out infinite;
+  }
+
+  .launch-orb.orb-a {
+    width: 340px;
+    height: 340px;
+    top: -80px;
+    left: -40px;
+  }
+
+  .launch-orb.orb-b {
+    width: 420px;
+    height: 420px;
+    bottom: -120px;
+    right: -80px;
+    animation-delay: -4s;
+  }
+
+  .launch-orb.orb-c {
+    width: 260px;
+    height: 260px;
+    top: 20%;
+    right: 20%;
+    animation-delay: -8s;
+    opacity: 0.5;
+  }
+
+  .launch-flow {
+    @apply absolute inset-0 opacity-40;
+    background: radial-gradient(40% 20% at 50% 30%, rgba(34, 244, 179, 0.4), transparent 70%),
+      radial-gradient(60% 30% at 30% 70%, rgba(73, 176, 255, 0.3), transparent 70%),
+      radial-gradient(50% 30% at 70% 60%, rgba(120, 94, 255, 0.35), transparent 75%);
+    mix-blend-mode: screen;
+    animation: flow 8s ease-in-out infinite;
+  }
+
+  .launch-flow.flow-2 {
+    animation-delay: -3s;
+    opacity: 0.25;
+  }
+
+  .launch-content {
+    @apply relative z-10 grid gap-8 items-center px-6;
+    width: min(1100px, 92vw);
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+
+  .launch-text h1 {
+    font-family: "Chakra Petch", "Space Grotesk", sans-serif;
+    font-size: clamp(36px, 5vw, 64px);
+    letter-spacing: -0.02em;
+    margin: 10px 0;
+  }
+
+  .launch-text p {
+    @apply m-0 text-muted leading-7 max-w-[520px];
+  }
+
+  .launch-tag {
+    @apply text-xs uppercase tracking-[0.3em] text-accent font-mono;
+  }
+
+  .launch-note {
+    @apply text-xs text-muted mt-4;
+  }
+
+  .launch-cta {
+    @apply mt-6 px-5 py-3 rounded-2xl font-semibold;
+    background: linear-gradient(120deg, #22f4b3, #57c7ff);
+    color: #0b111a;
+    box-shadow: 0 12px 30px rgba(34, 244, 179, 0.35);
+  }
+
+  .launch-pets {
+    @apply flex flex-wrap gap-4 justify-center;
+  }
+
+  .launch-pet {
+    @apply p-3 rounded-2xl border border-border bg-[#0b1020]/70;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+    animation: drift 10s ease-in-out infinite;
+  }
+
+  .launch-pet:nth-child(2) {
+    animation-delay: -2s;
+  }
+
+  .launch-pet:nth-child(3) {
+    animation-delay: -4s;
+  }
+
+  .launch-pet:nth-child(4) {
+    animation-delay: -6s;
+  }
 }
 
 @layer utilities {
@@ -355,5 +467,35 @@
   100% {
     transform: scale(0.8) rotate(360deg);
     opacity: 0.2;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0) translateX(0) scale(1);
+  }
+  50% {
+    transform: translateY(20px) translateX(-10px) scale(1.05);
+  }
+}
+
+@keyframes flow {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
   }
 }
