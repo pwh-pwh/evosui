@@ -16,6 +16,7 @@ import {
   buildSnapshotTx,
 } from "./sui";
 import { DEFAULT_PACKAGE_ID } from "./config";
+import CreatureAvatar from "./CreatureAvatar";
 
 type ExecResult = {
   digest?: string;
@@ -28,7 +29,32 @@ type CreatureItem = {
   level?: number;
   exp?: number;
   stage?: number;
+  genomeHex?: string;
 };
+
+function bytesToHex(bytes: number[]) {
+  return `0x${bytes.map((b) => b.toString(16).padStart(2, "0")).join("")}`;
+}
+
+function extractGenomeHex(fields?: Record<string, unknown>) {
+  const raw = fields?.genome;
+  if (!raw) return undefined;
+  if (typeof raw === "string") {
+    return raw.startsWith("0x") ? raw : undefined;
+  }
+  if (Array.isArray(raw)) {
+    const bytes = raw.map((v) => Number(v)).filter((v) => Number.isFinite(v));
+    return bytes.length ? bytesToHex(bytes) : undefined;
+  }
+  if (typeof raw === "object") {
+    const maybeVec = (raw as { vec?: unknown }).vec;
+    if (Array.isArray(maybeVec)) {
+      const bytes = maybeVec.map((v) => Number(v)).filter((v) => Number.isFinite(v));
+      return bytes.length ? bytesToHex(bytes) : undefined;
+    }
+  }
+  return undefined;
+}
 
 export default function App() {
   const account = useCurrentAccount();
@@ -127,7 +153,8 @@ export default function App() {
           const level = typeof fields?.level === "string" ? Number(fields.level) : undefined;
           const exp = typeof fields?.exp === "string" ? Number(fields.exp) : undefined;
           const stage = typeof fields?.stage === "string" ? Number(fields.stage) : undefined;
-          return { id, level, exp, stage };
+          const genomeHex = extractGenomeHex(fields);
+          return { id, level, exp, stage, genomeHex };
         })
         .filter((item): item is CreatureItem => Boolean(item));
       setCreatures(items);
@@ -202,11 +229,22 @@ export default function App() {
             <div className="list">
               {creatures.map((item) => (
                 <div key={item.id} className="list-item">
-                  <div>
-                    <div className="mono">{item.id}</div>
-                    <div className="hint">
-                      Lv {item.level ?? "-"} · EXP {item.exp ?? "-"} · Stage{" "}
-                      {item.stage ?? "-"}
+                  <div className="list-left">
+                    <CreatureAvatar
+                      genomeHex={item.genomeHex ?? "0x"}
+                      seedHex={item.id}
+                      level={item.level ?? 1}
+                      stage={item.stage ?? 0}
+                      size={64}
+                      label={`Lv ${item.level ?? "-"}`}
+                    />
+                    <div className="meta">
+                      <div className="mono">{item.id}</div>
+                      <div className="stat-row">
+                        <span>Lv {item.level ?? "-"}</span>
+                        <span>EXP {item.exp ?? "-"}</span>
+                        <span>Stage {item.stage ?? "-"}</span>
+                      </div>
                     </div>
                   </div>
                   <div className="actions">
