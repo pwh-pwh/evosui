@@ -450,19 +450,28 @@ export default function App() {
         (res as { effects?: { transactionDigest?: string } })?.effects?.transactionDigest;
       let createdId: string | undefined;
       if (digest) {
-        const txBlock = await client.getTransactionBlock({
-          digest,
-          options: { showObjectChanges: true },
-        });
-        const created = txBlock.objectChanges?.find(
-          (change) =>
-            change.type === "created" &&
-            "objectType" in change &&
-            typeof change.objectType === "string" &&
-            change.objectType.includes("::evosui::Creature")
-        );
-        if (created && "objectId" in created) {
-          createdId = String(created.objectId);
+        const delays = [300, 600, 1000, 1500];
+        for (let i = 0; i < delays.length; i += 1) {
+          try {
+            const txBlock = await client.getTransactionBlock({
+              digest,
+              options: { showObjectChanges: true },
+            });
+            const created = txBlock.objectChanges?.find(
+              (change) =>
+                change.type === "created" &&
+                "objectType" in change &&
+                typeof change.objectType === "string" &&
+                change.objectType.includes("::evosui::Creature")
+            );
+            if (created && "objectId" in created) {
+              createdId = String(created.objectId);
+              break;
+            }
+          } catch {
+            // ignore and retry
+          }
+          await new Promise((resolve) => setTimeout(resolve, delays[i]));
         }
       }
       const items = await loadCreatures();
