@@ -102,6 +102,7 @@ export default function App() {
   const [battleHistory, setBattleHistory] = useState<BattleRecord[]>([]);
   const [activeHistoryId, setActiveHistoryId] = useState<string | null>(null);
   const [battleAnimating, setBattleAnimating] = useState(false);
+  const [battleOutcome, setBattleOutcome] = useState<"A" | "B" | "T" | null>(null);
   const [kind, setKind] = useState(2);
   const [rarity, setRarity] = useState(2);
   const [power, setPower] = useState(100);
@@ -223,6 +224,12 @@ export default function App() {
         })
         .filter((r): r is BattleRecord => Boolean(r));
       setBattleHistory(records);
+      if (creatureId && creatureIdB) {
+        const match = records.find(
+          (h) => h.a === creatureId && h.b === creatureIdB
+        );
+        if (match) setBattleOutcome(match.winner);
+      }
     } catch {
       setBattleHistory([]);
     }
@@ -234,6 +241,7 @@ export default function App() {
       return;
     }
     setBattleAnimating(true);
+    setBattleOutcome(null);
     try {
       const tx = buildBattleTx(packageId, creatureId, creatureIdB);
       const res = await signAndExecute({ transactionBlock: tx });
@@ -242,7 +250,7 @@ export default function App() {
     } catch (e) {
       setResult({ error: (e as Error).message });
     } finally {
-      setTimeout(() => setBattleAnimating(false), 900);
+      setTimeout(() => setBattleAnimating(false), 1200);
     }
   }
 
@@ -632,6 +640,51 @@ export default function App() {
               {battleHistory.filter((h) => h.a === activeHistoryId || h.b === activeHistoryId)
                 .length === 0 ? <p className="hint">暂无对战记录</p> : null}
             </div>
+          </div>
+        </div>
+      ) : null}
+
+      {battleAnimating ? (
+        <div className="battle-modal">
+          <div className="battle-modal-card">
+            <div className="battle-title">Battle Engaged</div>
+            <div className="battle-stage is-animating battle-stage-modal">
+              <div className="battle-orb a">
+                {selectedCreature ? (
+                  <CreatureAvatar
+                    genomeHex={selectedCreature.genomeHex ?? "0x"}
+                    seedHex={selectedCreature.id}
+                    level={selectedCreature.level ?? 1}
+                    stage={selectedCreature.stage ?? 0}
+                    size={56}
+                  />
+                ) : null}
+              </div>
+              <div className="battle-orb b">
+                {selectedCreatureB ? (
+                  <CreatureAvatar
+                    genomeHex={selectedCreatureB.genomeHex ?? "0x"}
+                    seedHex={selectedCreatureB.id}
+                    level={selectedCreatureB.level ?? 1}
+                    stage={selectedCreatureB.stage ?? 0}
+                    size={56}
+                  />
+                ) : null}
+              </div>
+              <div className="battle-spark" />
+              <div className="battle-rings" />
+              <div className="battle-explosion" />
+            </div>
+            {battleOutcome ? (
+              <div className="battle-result">
+                {battleOutcome === "T"
+                  ? "平局"
+                  : battleOutcome === "A"
+                  ? "A 胜"
+                  : "B 胜"}
+              </div>
+            ) : null}
+            <div className="hint">链上对战结算中…</div>
           </div>
         </div>
       ) : null}
