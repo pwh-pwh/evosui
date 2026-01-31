@@ -1,5 +1,22 @@
 import { Transaction } from "@mysten/sui/transactions";
 
+type SharedObjectRef = {
+  objectId: string;
+  initialSharedVersion: string | number;
+  mutable: boolean;
+};
+
+function arenaArg(tx: Transaction, arena: string | SharedObjectRef) {
+  if (typeof arena === "string") {
+    return tx.object(arena);
+  }
+  return tx.sharedObjectRef({
+    objectId: arena.objectId,
+    initialSharedVersion: arena.initialSharedVersion,
+    mutable: arena.mutable,
+  });
+}
+
 export function hexToBytes(hex: string): number[] {
   const clean = hex.trim().replace(/^0x/, "");
   if (clean.length === 0) return [];
@@ -127,40 +144,40 @@ export function buildCreateArenaTx(packageId: string) {
 
 export function buildDepositArenaTx(
   packageId: string,
-  arenaId: string,
+  arenaId: string | SharedObjectRef,
   creatureId: string
 ) {
   const tx = new Transaction();
   tx.moveCall({
     target: `${packageId}::evosui::deposit_arena`,
-    arguments: [tx.object(arenaId), tx.object(creatureId)],
+    arguments: [arenaArg(tx, arenaId), tx.object(creatureId)],
   });
   return tx;
 }
 
 export function buildWithdrawArenaTx(
   packageId: string,
-  arenaId: string,
+  arenaId: string | SharedObjectRef,
   creatureId: string
 ) {
   const tx = new Transaction();
   tx.moveCall({
     target: `${packageId}::evosui::withdraw_arena`,
-    arguments: [tx.object(arenaId), tx.object(creatureId)],
+    arguments: [arenaArg(tx, arenaId), tx.object(creatureId)],
   });
   return tx;
 }
 
 export function buildArenaBattleTx(
   packageId: string,
-  arenaId: string,
+  arenaId: string | SharedObjectRef,
   creatureA: string,
   creatureB: string
 ) {
   const tx = new Transaction();
   tx.moveCall({
     target: `${packageId}::evosui::battle_in_arena`,
-    arguments: [tx.object(arenaId), tx.object(creatureA), tx.object(creatureB)],
+    arguments: [arenaArg(tx, arenaId), tx.object(creatureA), tx.object(creatureB)],
   });
   return tx;
 }

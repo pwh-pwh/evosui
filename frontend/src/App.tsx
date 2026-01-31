@@ -61,6 +61,25 @@ type ChainBattleEvent = {
   sender?: string;
 };
 
+type ChainArenaEvent = {
+  arena_id?: string;
+  creator?: string;
+  epoch?: string | number;
+};
+
+type ArenaItem = {
+  id: string;
+  initialSharedVersion?: string | number;
+};
+
+type ArenaCreatureItem = {
+  id: string;
+  level?: number;
+  exp?: number;
+  stage?: number;
+  genomeHex?: string;
+};
+
 const I18N = {
   zh: {
     tag: "EvoSui · On-chain Evolution",
@@ -75,6 +94,14 @@ const I18N = {
     readCreature: "读取 Creature 对象",
     arenaId: "Arena ID",
     createArena: "创建共享对战场",
+    loadArenas: "加载 Arena 列表",
+    noArenas: "暂无 Arena",
+    selectArena: "选择",
+    unclaimedCreatures: "未取回生物",
+    refreshUnclaimed: "刷新未取回",
+    noUnclaimed: "暂无未取回生物",
+    loading: "加载中…",
+    loadFailed: "加载失败：",
     myCreatures: "我的 Creature",
     refreshList: "刷新列表",
     errorPrefix: "错误：",
@@ -128,7 +155,9 @@ const I18N = {
     draw: "平局",
     aWin: "A 胜",
     bWin: "B 胜",
+    recallHint: "对战已结算，可点击 A/B 取回",
     selectABFirst: "请先选择 A/B Creature。",
+    sameCreature: "A/B Creature 不能相同。",
     connectWalletSetPackage: "请先连接钱包并填写 Package ID。",
     levelShort: "Lv",
     expShort: "EXP",
@@ -147,6 +176,14 @@ const I18N = {
     readCreature: "Load Creature Object",
     arenaId: "Arena ID",
     createArena: "Create Shared Arena",
+    loadArenas: "Load Arenas",
+    noArenas: "No arenas yet",
+    selectArena: "Select",
+    unclaimedCreatures: "Unclaimed Creatures",
+    refreshUnclaimed: "Refresh Unclaimed",
+    noUnclaimed: "No unclaimed creatures",
+    loading: "Loading…",
+    loadFailed: "Load failed: ",
     myCreatures: "My Creatures",
     refreshList: "Refresh List",
     errorPrefix: "Error: ",
@@ -200,7 +237,9 @@ const I18N = {
     draw: "Draw",
     aWin: "A Wins",
     bWin: "B Wins",
+    recallHint: "Battle settled. You can withdraw A/B now.",
     selectABFirst: "Select A/B creatures first.",
+    sameCreature: "A/B creatures must be different.",
     connectWalletSetPackage: "Connect wallet and set Package ID first.",
     levelShort: "Lv",
     expShort: "EXP",
@@ -256,11 +295,16 @@ export default function App() {
   const [creatureId, setCreatureId] = useState("");
   const [creatureIdB, setCreatureIdB] = useState("");
   const [creatures, setCreatures] = useState<CreatureItem[]>([]);
+  const [arenaCreatures, setArenaCreatures] = useState<ArenaCreatureItem[]>([]);
+  const [arenas, setArenas] = useState<ArenaItem[]>([]);
+  const [arenasLoading, setArenasLoading] = useState(false);
+  const [arenasError, setArenasError] = useState("");
   const [creatureError, setCreatureError] = useState("");
   const [battleHistory, setBattleHistory] = useState<BattleRecord[]>([]);
   const [activeHistoryId, setActiveHistoryId] = useState<string | null>(null);
   const [battleAnimating, setBattleAnimating] = useState(false);
   const [battleOutcome, setBattleOutcome] = useState<"A" | "B" | "T" | null>(null);
+  const [showRecallHint, setShowRecallHint] = useState(false);
   const [kind, setKind] = useState(2);
   const [rarity, setRarity] = useState(2);
   const [power, setPower] = useState(100);
@@ -287,6 +331,8 @@ export default function App() {
     selectedCreature?.exp != null && nextStageRequiredExp != null
       ? selectedCreature.exp >= nextStageRequiredExp
       : false;
+  const canBattle =
+    Boolean(creatureId && creatureIdB) && creatureId !== creatureIdB;
 
   const headerStatus = useMemo(() => {
     if (!account?.address) return t("disconnected");
@@ -299,7 +345,7 @@ export default function App() {
       return;
     }
     try {
-      const tx = txBuilder();
+      const tx = await txBuilder();
       const res = await signAndExecute({
         transactionBlock: tx,
       });
@@ -322,6 +368,26 @@ export default function App() {
     }
   }
 
+  async function getArenaSharedRef() {
+    if (!arenaId) {
+      throw new Error("Arena ID is required");
+    }
+    const obj = await client.getObject({
+      id: arenaId,
+      options: { showOwner: true },
+    });
+    const shared = (obj.data?.owner as { Shared?: { initial_shared_version?: string | number } })
+      ?.Shared;
+    if (!shared?.initial_shared_version) {
+      throw new Error("Arena must be a shared object");
+    }
+    return {
+      objectId: arenaId,
+      initialSharedVersion: shared.initial_shared_version,
+      mutable: true,
+    };
+  }
+
   async function devInspectSnapshot() {
     if (!account?.address || !packageId || !creatureId) return;
     try {
@@ -333,6 +399,135 @@ export default function App() {
       setSnapshot(JSON.stringify(resp, null, 2));
     } catch (e) {
       setSnapshot((e as Error).message);
+    }
+  }
+
+  async function loadArenas() {
+    if (!packageId) return;
+    setArenasLoading(true);
+    setArenasError("");
+    try {
+      const resp = await client.queryEvents({
+        query: { MoveEventType: `${packageId}::evosui::ArenaCreatedEvent` },
+        limit: 30,
+        order: "descending",
+      });
+      const items: ArenaItem[] = resp.data
+        .map((ev) => {
+          const parsed = ev.parsedJson as ChainArenaEvent | null;
+          const id = parsed?.arena_id ? String(parsed.arena_id) : undefined;
+          if (!id) return null;
+          return { id };
+        })
+        .filter((item): item is ArenaItem => Boolean(item));
+      const unique = Array.from(new Map(items.map((item) => [item.id, item])).values());
+      setArenas(unique);
+    } catch (e) {
+      setArenas([]);
+      setArenasError((e as Error).message);
+    } finally {
+      setArenasLoading(false);
+    }
+  }
+
+  async function loadArenaCreatures() {
+    if (!arenaId || !account?.address) {
+      setArenaCreatures([]);
+      return;
+    }
+    try {
+      const arenaObj = await client.getObject({
+        id: arenaId,
+        options: { showContent: true, showOwner: true },
+      });
+      const fields = (arenaObj.data?.content as
+        | { dataType: "moveObject"; fields?: Record<string, unknown> }
+        | undefined)?.fields;
+      const creaturesField = fields?.creatures as
+        | string
+        | { id?: string; id?: { id?: string } }
+        | { id?: { id?: string } }
+        | undefined;
+      const tableId =
+        typeof creaturesField === "string"
+          ? creaturesField
+          : typeof (creaturesField as { id?: string })?.id === "string"
+          ? (creaturesField as { id?: string }).id
+          : typeof (creaturesField as { id?: { id?: string } })?.id?.id === "string"
+          ? (creaturesField as { id?: { id?: string } }).id!.id
+          : undefined;
+      if (!tableId) {
+        setArenaCreatures([]);
+        return;
+      }
+      const fieldsResp = await client.getDynamicFields({ parentId: tableId, limit: 50 });
+      const creatureIds = fieldsResp.data
+        .map((entry) => {
+          const value = (entry.name as { value?: unknown })?.value;
+          if (typeof value === "string") return value;
+          const idValue = (value as { id?: string })?.id;
+          if (typeof idValue === "string") return idValue;
+          const direct = (entry.name as { id?: string })?.id;
+          if (typeof direct === "string") return direct;
+          return null;
+        })
+        .filter((id): id is string => Boolean(id));
+      if (creatureIds.length === 0) {
+        setArenaCreatures([]);
+        return;
+      }
+      const creaturesResp = await client.multiGetObjects({
+        ids: creatureIds,
+        options: { showContent: true },
+      });
+      const items: ArenaCreatureItem[] = creaturesResp
+        .map((obj) => {
+          const id = obj.data?.objectId;
+          const content = obj.data?.content as
+            | { dataType: "moveObject"; fields?: Record<string, unknown> }
+            | undefined;
+          const fields = content?.dataType === "moveObject" ? content.fields : undefined;
+          if (!id || !fields) return null;
+          const owner = fields.owner as string | undefined;
+          if (!owner || owner !== account.address) return null;
+          const level = typeof fields.level === "string" ? Number(fields.level) : undefined;
+          const exp = typeof fields.exp === "string" ? Number(fields.exp) : undefined;
+          const stage = typeof fields.stage === "string" ? Number(fields.stage) : undefined;
+          const genomeHex = extractGenomeHex(fields);
+          return { id, level, exp, stage, genomeHex };
+        })
+        .filter((item): item is ArenaCreatureItem => Boolean(item));
+      setArenaCreatures(items);
+    } catch {
+      setArenaCreatures([]);
+    }
+  }
+
+  async function createArenaAndSetId() {
+    if (!canTransact) {
+      setResult({ error: t("connectWalletSetPackage") });
+      return;
+    }
+    try {
+      const tx = buildCreateArenaTx(packageId);
+      const res = await signAndExecute({
+        transactionBlock: tx,
+        options: { showEffects: true, showObjectChanges: true },
+      });
+      setResult({ digest: res?.digest, raw: res });
+      const created = res?.objectChanges?.find(
+        (change) =>
+          change.type === "created" &&
+          "objectType" in change &&
+          typeof change.objectType === "string" &&
+          change.objectType.includes("::evosui::Arena")
+      );
+      if (created && "objectId" in created) {
+        setArenaId(String(created.objectId));
+        loadArenas();
+      }
+    } catch (e) {
+      setResult({ error: (e as Error).message });
     }
   }
 
@@ -378,7 +573,10 @@ export default function App() {
         const match = records.find(
           (h) => h.a === creatureId && h.b === creatureIdB
         );
-        if (match) setBattleOutcome(match.winner);
+        if (match) {
+          setBattleOutcome(match.winner);
+          setShowRecallHint(Boolean(arenaId));
+        }
       }
     } catch {
       setBattleHistory([]);
@@ -390,11 +588,21 @@ export default function App() {
       setResult({ error: t("selectABFirst") });
       return;
     }
+    if (creatureId === creatureIdB) {
+      setResult({ error: t("sameCreature") });
+      return;
+    }
     setBattleAnimating(true);
     setBattleOutcome(null);
+    setShowRecallHint(false);
     try {
       const tx = arenaId
-        ? buildArenaBattleTx(packageId, arenaId, creatureId, creatureIdB)
+        ? buildArenaBattleTx(
+            packageId,
+            await getArenaSharedRef(),
+            creatureId,
+            creatureIdB
+          )
         : buildBattleTx(packageId, creatureId, creatureIdB);
       const res = await signAndExecute({ transactionBlock: tx });
       setResult({ digest: res?.digest, raw: res });
@@ -444,7 +652,13 @@ export default function App() {
   useEffect(() => {
     loadCreatures();
     loadBattleEvents();
+    loadArenas();
+    loadArenaCreatures();
   }, [account?.address, packageId]);
+
+  useEffect(() => {
+    loadArenaCreatures();
+  }, [arenaId, account?.address]);
 
   return (
     <div className="app">
@@ -501,9 +715,40 @@ export default function App() {
               placeholder="0x..."
             />
           </label>
-          <button className="ghost" onClick={() => exec(() => buildCreateArenaTx(packageId))}>
+          <button className="ghost" onClick={createArenaAndSetId}>
             {t("createArena")}
           </button>
+          <button className="ghost" onClick={loadArenas}>
+            {t("loadArenas")}
+          </button>
+          {arenasLoading ? <p className="hint">{t("loading")}</p> : null}
+          {arenasError ? (
+            <p className="hint">
+              {t("loadFailed")}
+              {arenasError}
+            </p>
+          ) : null}
+          {arenas.length === 0 ? (
+            <p className="hint">{t("noArenas")}</p>
+          ) : (
+            <div className="list compact">
+              {arenas.map((arena) => (
+                <div key={arena.id} className="list-item">
+                  <div className="list-left">
+                    <div className="mono">{arena.id}</div>
+                  </div>
+                  <div className="actions">
+                    <button
+                      className="ghost"
+                      onClick={() => setArenaId(arena.id)}
+                    >
+                      {t("selectArena")}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
           <button className="ghost" onClick={loadCreature}>
             {t("readCreature")}
           </button>
@@ -745,7 +990,13 @@ export default function App() {
               className="ghost"
               disabled={!arenaId || !creatureId}
               onClick={() =>
-                exec(() => buildDepositArenaTx(packageId, arenaId, creatureId))
+                exec(async () =>
+                  buildDepositArenaTx(
+                    packageId,
+                    await getArenaSharedRef(),
+                    creatureId
+                  )
+                )
               }
             >
               {t("depositA")}
@@ -754,7 +1005,13 @@ export default function App() {
               className="ghost"
               disabled={!arenaId || !creatureIdB}
               onClick={() =>
-                exec(() => buildDepositArenaTx(packageId, arenaId, creatureIdB))
+                exec(async () =>
+                  buildDepositArenaTx(
+                    packageId,
+                    await getArenaSharedRef(),
+                    creatureIdB
+                  )
+                )
               }
             >
               {t("depositB")}
@@ -763,7 +1020,13 @@ export default function App() {
               className="ghost"
               disabled={!arenaId || !creatureId}
               onClick={() =>
-                exec(() => buildWithdrawArenaTx(packageId, arenaId, creatureId))
+                exec(async () =>
+                  buildWithdrawArenaTx(
+                    packageId,
+                    await getArenaSharedRef(),
+                    creatureId
+                  )
+                )
               }
             >
               {t("withdrawA")}
@@ -772,13 +1035,73 @@ export default function App() {
               className="ghost"
               disabled={!arenaId || !creatureIdB}
               onClick={() =>
-                exec(() => buildWithdrawArenaTx(packageId, arenaId, creatureIdB))
+                exec(async () =>
+                  buildWithdrawArenaTx(
+                    packageId,
+                    await getArenaSharedRef(),
+                    creatureIdB
+                  )
+                )
               }
             >
               {t("withdrawB")}
             </button>
           </div>
-          <button onClick={battleWithHistory}>{t("battleStart")}</button>
+          {showRecallHint && arenaId ? (
+            <div className="hint">{t("recallHint")}</div>
+          ) : null}
+          {arenaId ? (
+            <div className="arena-list">
+              <div className="label">{t("unclaimedCreatures")}</div>
+              <button className="ghost" onClick={loadArenaCreatures}>
+                {t("refreshUnclaimed")}
+              </button>
+              {arenaCreatures.length === 0 ? (
+                <p className="hint">{t("noUnclaimed")}</p>
+              ) : (
+                <div className="list compact">
+                  {arenaCreatures.map((item) => (
+                    <div key={item.id} className="list-item">
+                      <div className="list-left">
+                        <CreatureAvatar
+                          genomeHex={item.genomeHex ?? "0x"}
+                          seedHex={item.id}
+                          level={item.level ?? 1}
+                          stage={item.stage ?? 0}
+                          size={40}
+                        />
+                        <div className="meta">
+                          <div className="mono">{item.id}</div>
+                          <div className="stat-row">
+                            <span>
+                              {t("levelShort")} {item.level ?? "-"}
+                            </span>
+                            <span>
+                              {t("expShort")} {item.exp ?? "-"}
+                            </span>
+                            <span>
+                              {t("stageShort")} {item.stage ?? "-"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="actions">
+                        <button className="ghost" onClick={() => setCreatureId(item.id)}>
+                          {t("setA")}
+                        </button>
+                        <button className="ghost" onClick={() => setCreatureIdB(item.id)}>
+                          {t("setB")}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : null}
+          <button disabled={!canBattle} onClick={battleWithHistory}>
+            {t("battleStart")}
+          </button>
           <p className="hint">{t("battleHistoryHint")}</p>
         </div>
 

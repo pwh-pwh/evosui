@@ -90,6 +90,13 @@ module evosui::evosui {
         sender: address,
     }
 
+    /// Arena creation event for discovery.
+    public struct ArenaCreatedEvent has copy, drop, store {
+        arena_id: sui::object::ID,
+        creator: address,
+        epoch: u64,
+    }
+
     /// Shared arena that can custody creatures for cross-wallet battles.
     public struct Arena has key, store {
         id: sui::object::UID,
@@ -422,7 +429,13 @@ module evosui::evosui {
             creatures: sui::table::new(ctx),
             total: 0,
         };
+        let arena_id = sui::object::id(&arena);
         sui::transfer::share_object(arena);
+        sui::event::emit(ArenaCreatedEvent {
+            arena_id,
+            creator: sui::tx_context::sender(ctx),
+            epoch: sui::tx_context::epoch(ctx),
+        });
     }
 
     /// Deposit a creature into the shared arena (owner-only).
