@@ -114,6 +114,7 @@ const I18N = {
     landingNote: "随机基因驱动的独特生物 · 链上成长与对战",
     myCreatures: "我的 Creature",
     refreshList: "刷新列表",
+    listHint: "滚动查看更多",
     errorPrefix: "错误：",
     emptyCreatures: "暂无 Creature，先 Mint 一个。",
     clickAvatarHint: "点击头像查看对战详情",
@@ -218,6 +219,7 @@ const I18N = {
     landingNote: "Unique creatures · On-chain growth & battles",
     myCreatures: "My Creatures",
     refreshList: "Refresh List",
+    listHint: "Scroll to view more",
     errorPrefix: "Error: ",
     emptyCreatures: "No creatures yet. Mint one first.",
     clickAvatarHint: "Click avatar to view battle details",
@@ -410,6 +412,7 @@ export default function App() {
   const aInArena = arenaMode && aSelected ? arenaCreatureKeys.has(creatureId) : false;
   const bInArena = arenaMode && bSelected ? arenaCreatureKeys.has(creatureIdB) : false;
   const battleReady = canBattle && (!arenaMode || (aInArena && bInArena));
+
 
   const headerStatus = useMemo(() => {
     if (!account?.address) return t("disconnected");
@@ -1088,11 +1091,12 @@ export default function App() {
           ) : creatures.length === 0 ? (
             <p className="hint">{t("emptyCreatures")}</p>
           ) : (
-            <div className="list">
-              {creatures.map((item) => (
-                <div key={item.id} className="list-item">
-                  <div className="list-left">
-                    <button
+            <>
+              <div className="list scroll-list">
+                {creatures.map((item) => (
+                  <div key={item.id} className="list-item">
+                    <div className="list-left">
+                      <button
                       className="avatar-button"
                       onClick={() =>
                         setActiveHistoryId((prev) => (prev === item.id ? null : item.id))
@@ -1137,10 +1141,12 @@ export default function App() {
                     >
                       {t("setB")}
                     </button>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+              <p className="hint">{t("listHint")}</p>
+            </>
           )}
         </div>
 

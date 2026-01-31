@@ -114,6 +114,33 @@
     @apply flex flex-col gap-2.5;
   }
 
+  .scroll-list {
+    max-height: 320px;
+    overflow-y: auto;
+    padding-right: 6px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(88, 208, 255, 0.5) transparent;
+  }
+
+  .scroll-list::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .scroll-list::-webkit-scrollbar-track {
+    background: rgba(12, 16, 28, 0.4);
+    border-radius: 999px;
+  }
+
+  .scroll-list::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(34, 244, 179, 0.7), rgba(88, 208, 255, 0.6));
+    border-radius: 999px;
+    border: 2px solid rgba(12, 16, 28, 0.4);
+  }
+
+  .scroll-list::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, rgba(34, 244, 179, 0.9), rgba(88, 208, 255, 0.8));
+  }
+
   .list-item {
     @apply grid items-center gap-3 p-2.5 rounded-xl border border-border bg-[#101522];
     grid-template-columns: minmax(0, 1fr) auto;
