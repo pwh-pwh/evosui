@@ -1,35 +1,34 @@
 # EvoSui
 
-基于 Sui 的去中心化生物进化游戏原型。核心特性包括链上基因算法、对象嵌套器官/技能、可组合的战斗与进化，以及前端动态头像渲染与战斗记录展示。
+基于 Sui 的去中心化生物进化游戏原型。核心特性包括链上基因算法、对象嵌套器官/技能、可组合的战斗与进化，以及前端动态头像渲染与对战记录展示。
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/pwh-pwh/evosui&root-directory=frontend)
+
+## 项目亮点
+- 链上生物体：基因、等级、阶段、器官、技能全在链上
+- 动态遗传：变异 / 进化 / 繁殖形成“生命感”
+- 原子化对战：胜负、经验、事件一次交易完成
+- 前端实时：自动加载生物列表、头像动态渲染、对战动画与记录
 
 ## 目录结构
 - `evosui/`：Sui Move 合约
 - `frontend/`：前端游戏 UI（Vite + React + Tailwind + dApp Kit）
 
-## 合约功能概览
-- `Creature` 链上生物对象（基因、等级、阶段、器官、技能、统计）
-- 基因变异、喂养、进化、繁殖
-- 器官/技能动态字段嵌套
-- 战力计算与对战
-- 链上事件 `BattleEvent`（用于对战历史）
+## 功能清单
 
-合约入口主要在：
+| 模块 | 功能 |
+| --- | --- |
+| 合约 | Creature 对象、基因变异、喂养、进化、繁殖、战力计算、BattleEvent |
+| 前端 | 钱包连接、列表加载、动态头像、对战动画、链上历史 |
+
+## 合约入口
 - `evosui/sources/evosui.move`
 - `evosui/sources/creature_stats.move`
 
-## 前端功能概览
-- 钱包连接与网络切换（默认 testnet）
-- 生物列表自动加载（钱包内 Creature）
-- 基因头像动态渲染
-- 对战动画（含胜负揭示、爆炸粒子）
-- 对战历史（来自链上事件）
-
-## 本地开发
+## 快速开始
 
 ### 前端
-```
+```bash
 cd frontend
 npm install
 npm run dev
@@ -37,34 +36,42 @@ npm run dev
 访问：`http://localhost:5173/`
 
 ### 合约
-```
+```bash
 cd evosui
 sui move build
 sui move test
 ```
 
-## 发布记录（Testnet）
-当前前端默认 Package ID 已更新为最新 testnet 包：
+## Testnet 发布信息
+当前默认 Package ID（前端已内置）：
 ```
 0xe0bf7ca833eea10f2d9f277fa50421fa33b4c0dce4c424a674644602a6c530b3
 ```
-该值定义在：`frontend/src/config.ts`
+对应位置：`frontend/src/config.ts`
 
-如需重新发布：
-```
+重新发布：
+```bash
 cd evosui
 sui client publish --gas-budget 100000000
 ```
-发布后请更新 `frontend/src/config.ts` 中的 Package ID。
+发布后更新 `frontend/src/config.ts`。
 
-## 使用说明（最小流程）
-1. 连接钱包（建议使用 testnet）
+## 使用流程（最小）
+1. 连接钱包（testnet）
 2. Mint Creature（自定义 genome hex）
 3. 在“我的 Creature”中选择 A/B
 4. 添加器官/技能提升战力
 5. 对战查看结果与历史记录
 
-## 注意事项
-- `evolve` 需要经验达到阈值：`(stage+1) * 100`
-- 对战需要同一钱包同时拥有 A/B 生物
-- 链上对战历史依赖 `BattleEvent` 事件（仅新发布包支持）
+## 规则提示
+- 进化条件：`exp >= (stage+1) * 100`
+- 对战要求：同一钱包拥有 A/B 两只生物
+- 对战历史来源：链上 `BattleEvent`
+
+## 常见问题
+
+**Q: 头像是否会变化？**  
+A: 会，基因 + 等级 + 阶段都会影响形态与颜色。
+
+**Q: 对战历史为什么为空？**  
+A: 需要使用带有 `BattleEvent` 的新发布包，并在前端填写正确 Package ID。
