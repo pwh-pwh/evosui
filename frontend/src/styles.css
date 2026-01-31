@@ -47,6 +47,36 @@
     @apply text-xs text-muted font-mono;
   }
 
+  .connect-shell :is(button, a) {
+    @apply w-full;
+  }
+
+  .connect-shell button {
+    @apply rounded-2xl px-4 py-2.5 font-semibold text-[#0b111a];
+    background: linear-gradient(120deg, #22f4b3, #57c7ff);
+    box-shadow: 0 10px 25px rgba(34, 244, 179, 0.25);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .connect-shell button:hover {
+    transform: translateY(-1px) scale(1.01);
+    box-shadow: 0 14px 30px rgba(87, 199, 255, 0.28);
+  }
+
+  .connect-shell button:active {
+    transform: translateY(0) scale(0.99);
+  }
+
+  .connect-shell button span {
+    font-family: "Chakra Petch", "Space Grotesk", sans-serif;
+    letter-spacing: 0.02em;
+  }
+
+  .hero button.ghost {
+    @apply border border-border text-text;
+    background: rgba(16, 21, 34, 0.7);
+  }
+
   .grid-layout {
     @apply grid gap-4 mt-6;
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -518,6 +548,48 @@
   .mint-fx-id {
     @apply text-xs text-muted font-mono max-w-[280px] text-center break-all;
   }
+
+  .meteor-field {
+    @apply absolute inset-0 pointer-events-none;
+  }
+
+  .meteor {
+    @apply absolute block opacity-70;
+    width: 180px;
+    height: 2px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.0), rgba(120, 200, 255, 0.8), rgba(34, 244, 179, 0.0));
+    filter: drop-shadow(0 0 6px rgba(120, 200, 255, 0.6));
+    transform: rotate(-25deg);
+    animation: meteor 6s linear infinite;
+  }
+
+  .meteor-1 {
+    top: 8%;
+    left: -20%;
+  }
+
+  .meteor-2 {
+    top: 30%;
+    left: -30%;
+    width: 220px;
+    animation-delay: -2s;
+    opacity: 0.5;
+  }
+
+  .meteor-3 {
+    top: 55%;
+    left: -25%;
+    width: 160px;
+    animation-delay: -4s;
+  }
+
+  .meteor-4 {
+    top: 75%;
+    left: -35%;
+    width: 200px;
+    animation-delay: -5s;
+    opacity: 0.35;
+  }
 }
 
 @layer utilities {
@@ -627,6 +699,23 @@
   }
   100% {
     transform: translateY(-120px);
+  }
+}
+
+@keyframes meteor {
+  0% {
+    transform: translate3d(-200px, -120px, 0) rotate(-25deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate3d(1600px, 600px, 0) rotate(-25deg);
+    opacity: 0;
   }
 }
 

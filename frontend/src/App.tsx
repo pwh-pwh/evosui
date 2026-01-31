@@ -857,6 +857,12 @@ export default function App() {
         <div className="ambient-blob blob-b" />
         <div className="ambient-blob blob-c" />
         <div className="ambient-particles" />
+        <div className="meteor-field">
+          <span className="meteor meteor-1" />
+          <span className="meteor meteor-2" />
+          <span className="meteor meteor-3" />
+          <span className="meteor meteor-4" />
+        </div>
       </div>
       <AnimatePresence>
         {showLanding ? (
@@ -971,7 +977,9 @@ export default function App() {
           >
             {t("language")}
           </button>
-          <ConnectButton />
+          <div className="connect-shell">
+            <ConnectButton />
+          </div>
         </div>
       </header>
 
