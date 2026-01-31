@@ -2,6 +2,8 @@
 
 基于 Sui 的去中心化生物进化游戏原型。核心特性包括链上基因算法、对象嵌套器官/技能、可组合的战斗与进化，以及前端动态头像渲染与战斗记录展示。
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/pwh-pwh/evosui&root-directory=frontend)
+
 ## 目录结构
 - `evosui/`：Sui Move 合约
 - `frontend/`：前端游戏 UI（Vite + React + Tailwind + dApp Kit）
