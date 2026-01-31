@@ -1,0 +1,44 @@
+<svg width="1200" height="360" viewBox="0 0 1200 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="EvoSui banner">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0b1020"/>
+      <stop offset="55%" stop-color="#0f2740"/>
+      <stop offset="100%" stop-color="#0b3a5a"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#41c3ff"/>
+      <stop offset="100%" stop-color="#9ee7ff"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="1200" height="360" fill="url(#bg)"/>
+  <g opacity="0.5">
+    <circle cx="190" cy="80" r="4" fill="#7fd3ff"/>
+    <circle cx="240" cy="120" r="3" fill="#7fd3ff"/>
+    <circle cx="280" cy="70" r="2" fill="#7fd3ff"/>
+    <circle cx="1030" cy="90" r="3" fill="#7fd3ff"/>
+    <circle cx="970" cy="140" r="2" fill="#7fd3ff"/>
+  </g>
+  <g>
+    <path d="M110 210 C 210 120, 360 120, 460 210" fill="none" stroke="url(#accent)" stroke-width="6" opacity="0.5"/>
+    <path d="M740 230 C 840 150, 980 150, 1080 230" fill="none" stroke="url(#accent)" stroke-width="6" opacity="0.35"/>
+  </g>
+  <g filter="url(#glow)">
+    <text x="80" y="165" font-family="Segoe UI, Arial, sans-serif" font-size="64" font-weight="700" fill="#e7f8ff">EvoSui</text>
+    <text x="80" y="210" font-family="Segoe UI, Arial, sans-serif" font-size="22" fill="#b7e9ff">On-chain evolution, combat, and dynamic creatures on Sui</text>
+  </g>
+  <g>
+    <rect x="80" y="240" width="170" height="36" rx="18" fill="#0b1f33" stroke="#41c3ff"/>
+    <text x="102" y="264" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#b7e9ff">Sui Move</text>
+    <rect x="260" y="240" width="170" height="36" rx="18" fill="#0b1f33" stroke="#41c3ff"/>
+    <text x="286" y="264" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#b7e9ff">Arena Battle</text>
+    <rect x="440" y="240" width="200" height="36" rx="18" fill="#0b1f33" stroke="#41c3ff"/>
+    <text x="466" y="264" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#b7e9ff">Dynamic Avatar</text>
+  </g>
+</svg>
