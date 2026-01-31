@@ -9,6 +9,8 @@
 ![Style](https://img.shields.io/badge/UI-Tailwind-38bdf8)
 ![Wallet](https://img.shields.io/badge/Wallet-dApp%20Kit-0ea5e9)
 
+**语言 / Language**: [中文](README.md) | [English](README.en.md)
+
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/pwh-pwh/evosui&root-directory=frontend)
 
 ## 快速索引
