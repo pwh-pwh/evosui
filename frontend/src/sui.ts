@@ -116,6 +116,55 @@ export function buildBattleTx(
   return tx;
 }
 
+export function buildCreateArenaTx(packageId: string) {
+  const tx = new Transaction();
+  tx.moveCall({
+    target: `${packageId}::evosui::create_arena`,
+    arguments: [],
+  });
+  return tx;
+}
+
+export function buildDepositArenaTx(
+  packageId: string,
+  arenaId: string,
+  creatureId: string
+) {
+  const tx = new Transaction();
+  tx.moveCall({
+    target: `${packageId}::evosui::deposit_arena`,
+    arguments: [tx.object(arenaId), tx.object(creatureId)],
+  });
+  return tx;
+}
+
+export function buildWithdrawArenaTx(
+  packageId: string,
+  arenaId: string,
+  creatureId: string
+) {
+  const tx = new Transaction();
+  tx.moveCall({
+    target: `${packageId}::evosui::withdraw_arena`,
+    arguments: [tx.object(arenaId), tx.object(creatureId)],
+  });
+  return tx;
+}
+
+export function buildArenaBattleTx(
+  packageId: string,
+  arenaId: string,
+  creatureA: string,
+  creatureB: string
+) {
+  const tx = new Transaction();
+  tx.moveCall({
+    target: `${packageId}::evosui::battle_in_arena`,
+    arguments: [tx.object(arenaId), tx.object(creatureA), tx.object(creatureB)],
+  });
+  return tx;
+}
+
 export function buildBattlePowerTx(packageId: string, creatureId: string) {
   const tx = new Transaction();
   tx.moveCall({

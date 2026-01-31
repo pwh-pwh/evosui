@@ -12,6 +12,7 @@ module evosui::evosui {
     const BATTLE_EXP_TIE: u64 = 8;
 
     const E_NOT_OWNER: u64 = 100;
+    const E_SAME_CREATURE: u64 = 101;
 
     /// Core on-chain creature object.
     public struct Creature has key, store {
@@ -87,6 +88,13 @@ module evosui::evosui {
         exp_gain_b: u64,
         epoch: u64,
         sender: address,
+    }
+
+    /// Shared arena that can custody creatures for cross-wallet battles.
+    public struct Arena has key, store {
+        id: sui::object::UID,
+        creatures: sui::table::Table<sui::object::ID, Creature>,
+        total: u64,
     }
 
     /// Mint a new creature with a genome payload.
@@ -404,6 +412,73 @@ module evosui::evosui {
     ): BattleOutcome {
         assert_owner(creature_a, ctx);
         assert_owner(creature_b, ctx);
+        battle_inner(creature_a, creature_b, ctx)
+    }
+
+    /// Create and share a shared arena for cross-wallet battles.
+    public entry fun create_arena(ctx: &mut sui::tx_context::TxContext) {
+        let arena = Arena {
+            id: sui::object::new(ctx),
+            creatures: sui::table::new(ctx),
+            total: 0,
+        };
+        sui::transfer::share_object(arena);
+    }
+
+    /// Deposit a creature into the shared arena (owner-only).
+    public entry fun deposit_arena(
+        arena: &mut Arena,
+        creature: Creature,
+        ctx: &mut sui::tx_context::TxContext,
+    ) {
+        assert_owner(&creature, ctx);
+        let creature_id = sui::object::id(&creature);
+        sui::table::add(&mut arena.creatures, creature_id, creature);
+        arena.total = arena.total + 1;
+    }
+
+    /// Withdraw a creature from the shared arena back to its owner.
+    public entry fun withdraw_arena(
+        arena: &mut Arena,
+        creature_id: sui::object::ID,
+        ctx: &mut sui::tx_context::TxContext,
+    ) {
+        let creature = sui::table::remove(&mut arena.creatures, creature_id);
+        assert_owner(&creature, ctx);
+        arena.total = arena.total - 1;
+        sui::transfer::transfer(creature, sui::tx_context::sender(ctx));
+    }
+
+    /// Battle two creatures stored inside the shared arena.
+    public entry fun battle_in_arena(
+        arena: &mut Arena,
+        creature_a: sui::object::ID,
+        creature_b: sui::object::ID,
+        ctx: &mut sui::tx_context::TxContext,
+    ): BattleOutcome {
+        assert!(creature_a != creature_b, E_SAME_CREATURE);
+        let mut creature_a_val = sui::table::remove(&mut arena.creatures, creature_a);
+        let mut creature_b_val = sui::table::remove(&mut arena.creatures, creature_b);
+        let outcome = battle_inner(&mut creature_a_val, &mut creature_b_val, ctx);
+        sui::table::add(&mut arena.creatures, creature_a, creature_a_val);
+        sui::table::add(&mut arena.creatures, creature_b, creature_b_val);
+        outcome
+    }
+
+    public fun arena_total(arena: &Arena): u64 {
+        arena.total
+    }
+
+    fun apply_rarity_weight(power: u64, rarity: u8): u64 {
+        let weight = RARITY_WEIGHT_BASE + (rarity as u64) * RARITY_WEIGHT_STEP;
+        (power * weight) / RARITY_WEIGHT_BASE
+    }
+
+    fun battle_inner(
+        creature_a: &mut Creature,
+        creature_b: &mut Creature,
+        ctx: &mut sui::tx_context::TxContext,
+    ): BattleOutcome {
         let power_a = battle_power(creature_a);
         let power_b = battle_power(creature_b);
         let mut winner = 2;
@@ -438,11 +513,6 @@ module evosui::evosui {
             exp_gain_a: exp_a,
             exp_gain_b: exp_b,
         }
-    }
-
-    fun apply_rarity_weight(power: u64, rarity: u8): u64 {
-        let weight = RARITY_WEIGHT_BASE + (rarity as u64) * RARITY_WEIGHT_STEP;
-        (power * weight) / RARITY_WEIGHT_BASE
     }
 
     fun zero_u64_vec(len: u64): vector<u64> {

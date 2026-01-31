@@ -8,12 +8,16 @@ import {
 import {
   buildAddOrganTx,
   buildAddSkillTx,
+  buildArenaBattleTx,
+  buildCreateArenaTx,
+  buildDepositArenaTx,
   buildBattleTx,
   buildEvolveTx,
   buildFeedTx,
   buildMintTx,
   buildMutateTx,
   buildSnapshotTx,
+  buildWithdrawArenaTx,
 } from "./sui";
 import { DEFAULT_PACKAGE_ID } from "./config";
 import CreatureAvatar from "./CreatureAvatar";
@@ -69,6 +73,8 @@ const I18N = {
     creatureId: "Creature ID",
     creatureIdB: "Creature B ID",
     readCreature: "读取 Creature 对象",
+    arenaId: "Arena ID",
+    createArena: "创建共享对战场",
     myCreatures: "我的 Creature",
     refreshList: "刷新列表",
     errorPrefix: "错误：",
@@ -99,6 +105,11 @@ const I18N = {
     mutate: "变异",
     battle: "对战",
     battleHint: "同一钱包拥有两只 Creature 才可对战。",
+    arenaHint: "跨钱包对战：填写 Arena ID，并由双方各自存入 Creature。",
+    depositA: "A 入场",
+    depositB: "B 入场",
+    withdrawA: "A 取回",
+    withdrawB: "B 取回",
     battleStart: "发起对战",
     battleHistoryHint: "对战记录来自链上事件（需合约已升级）。",
     snapshot: "只读快照",
@@ -134,6 +145,8 @@ const I18N = {
     creatureId: "Creature ID",
     creatureIdB: "Creature B ID",
     readCreature: "Load Creature Object",
+    arenaId: "Arena ID",
+    createArena: "Create Shared Arena",
     myCreatures: "My Creatures",
     refreshList: "Refresh List",
     errorPrefix: "Error: ",
@@ -164,6 +177,11 @@ const I18N = {
     mutate: "Mutate",
     battle: "Battle",
     battleHint: "Both creatures must be owned by the same wallet.",
+    arenaHint: "Cross-wallet battle: set Arena ID and deposit creatures from each owner.",
+    depositA: "Deposit A",
+    depositB: "Deposit B",
+    withdrawA: "Withdraw A",
+    withdrawB: "Withdraw B",
     battleStart: "Start Battle",
     battleHistoryHint: "History is sourced from on-chain events (requires upgraded package).",
     snapshot: "Read-only Snapshot",
@@ -233,6 +251,7 @@ export default function App() {
     return saved === "en" || saved === "zh" ? saved : "zh";
   });
   const [packageId, setPackageId] = useState(DEFAULT_PACKAGE_ID);
+  const [arenaId, setArenaId] = useState("");
   const [genomeHex, setGenomeHex] = useState("0x010203");
   const [creatureId, setCreatureId] = useState("");
   const [creatureIdB, setCreatureIdB] = useState("");
@@ -374,7 +393,9 @@ export default function App() {
     setBattleAnimating(true);
     setBattleOutcome(null);
     try {
-      const tx = buildBattleTx(packageId, creatureId, creatureIdB);
+      const tx = arenaId
+        ? buildArenaBattleTx(packageId, arenaId, creatureId, creatureIdB)
+        : buildBattleTx(packageId, creatureId, creatureIdB);
       const res = await signAndExecute({ transactionBlock: tx });
       setResult({ digest: res?.digest, raw: res });
       await loadBattleEvents();
@@ -472,6 +493,17 @@ export default function App() {
               placeholder="0x..."
             />
           </label>
+          <label>
+            {t("arenaId")}
+            <input
+              value={arenaId}
+              onChange={(e) => setArenaId(e.target.value.trim())}
+              placeholder="0x..."
+            />
+          </label>
+          <button className="ghost" onClick={() => exec(() => buildCreateArenaTx(packageId))}>
+            {t("createArena")}
+          </button>
           <button className="ghost" onClick={loadCreature}>
             {t("readCreature")}
           </button>
@@ -682,6 +714,7 @@ export default function App() {
         <div className="card">
           <h2>{t("battle")}</h2>
           <p className="hint">{t("battleHint")}</p>
+          {arenaId ? <p className="hint">{t("arenaHint")}</p> : null}
           <div className={`battle-stage ${battleAnimating ? "is-animating" : ""}`}>
             <div className="battle-orb a">
               {selectedCreature ? (
@@ -706,6 +739,44 @@ export default function App() {
               ) : null}
             </div>
             <div className="battle-spark" />
+          </div>
+          <div className="actions">
+            <button
+              className="ghost"
+              disabled={!arenaId || !creatureId}
+              onClick={() =>
+                exec(() => buildDepositArenaTx(packageId, arenaId, creatureId))
+              }
+            >
+              {t("depositA")}
+            </button>
+            <button
+              className="ghost"
+              disabled={!arenaId || !creatureIdB}
+              onClick={() =>
+                exec(() => buildDepositArenaTx(packageId, arenaId, creatureIdB))
+              }
+            >
+              {t("depositB")}
+            </button>
+            <button
+              className="ghost"
+              disabled={!arenaId || !creatureId}
+              onClick={() =>
+                exec(() => buildWithdrawArenaTx(packageId, arenaId, creatureId))
+              }
+            >
+              {t("withdrawA")}
+            </button>
+            <button
+              className="ghost"
+              disabled={!arenaId || !creatureIdB}
+              onClick={() =>
+                exec(() => buildWithdrawArenaTx(packageId, arenaId, creatureIdB))
+              }
+            >
+              {t("withdrawB")}
+            </button>
           </div>
           <button onClick={battleWithHistory}>{t("battleStart")}</button>
           <p className="hint">{t("battleHistoryHint")}</p>
