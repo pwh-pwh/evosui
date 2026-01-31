@@ -32,6 +32,31 @@ type CreatureItem = {
   genomeHex?: string;
 };
 
+type BattleRecord = {
+  id: string;
+  a: string;
+  b: string;
+  winner: "A" | "B" | "T" | "?";
+  powerA?: number;
+  powerB?: number;
+  expA?: number;
+  expB?: number;
+  digest?: string;
+  ts: number;
+};
+
+type ChainBattleEvent = {
+  creature_a?: string;
+  creature_b?: string;
+  winner?: string | number;
+  power_a?: string | number;
+  power_b?: string | number;
+  exp_gain_a?: string | number;
+  exp_gain_b?: string | number;
+  epoch?: string | number;
+  sender?: string;
+};
+
 function bytesToHex(bytes: number[]) {
   return `0x${bytes.map((b) => b.toString(16).padStart(2, "0")).join("")}`;
 }
@@ -56,6 +81,13 @@ function extractGenomeHex(fields?: Record<string, unknown>) {
   return undefined;
 }
 
+function num(v?: string | number): number | undefined {
+  if (v == null) return undefined;
+  if (typeof v === "number") return v;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : undefined;
+}
+
 export default function App() {
   const account = useCurrentAccount();
   const client = useSuiClient();
@@ -67,6 +99,8 @@ export default function App() {
   const [creatureIdB, setCreatureIdB] = useState("");
   const [creatures, setCreatures] = useState<CreatureItem[]>([]);
   const [creatureError, setCreatureError] = useState("");
+  const [battleHistory, setBattleHistory] = useState<BattleRecord[]>([]);
+  const [activeHistoryId, setActiveHistoryId] = useState<string | null>(null);
   const [kind, setKind] = useState(2);
   const [rarity, setRarity] = useState(2);
   const [power, setPower] = useState(100);
@@ -128,6 +162,78 @@ export default function App() {
     }
   }
 
+  async function getBattlePower(id: string): Promise<number | undefined> {
+    if (!account?.address || !packageId || !id) return undefined;
+    try {
+      const tx = buildBattlePowerTx(packageId, id);
+      const resp = await client.devInspectTransactionBlock({
+        sender: account.address,
+        transactionBlock: tx,
+      });
+      return parseU64(resp);
+    } catch {
+      return undefined;
+    }
+  }
+
+  async function loadBattleEvents() {
+    if (!packageId) return;
+    try {
+      const resp = await client.queryEvents({
+        query: { MoveEventType: `${packageId}::evosui::BattleEvent` },
+        limit: 50,
+        order: "descending",
+      });
+      const records: BattleRecord[] = resp.data
+        .map((ev) => {
+          const parsed = ev.parsedJson as ChainBattleEvent | null;
+          if (!parsed?.creature_a || !parsed?.creature_b) return null;
+          const winnerRaw = parsed.winner;
+          const winner =
+            winnerRaw === 0 || winnerRaw === "0"
+              ? "A"
+              : winnerRaw === 1 || winnerRaw === "1"
+              ? "B"
+              : winnerRaw === 2 || winnerRaw === "2"
+              ? "T"
+              : "?";
+          const id = ev.id?.txDigest ?? `${parsed.creature_a}-${parsed.creature_b}-${ev.timestampMs ?? 0}`;
+          const ts = typeof ev.timestampMs === "string" ? Number(ev.timestampMs) : ev.timestampMs;
+          return {
+            id,
+            a: String(parsed.creature_a),
+            b: String(parsed.creature_b),
+            winner,
+            powerA: num(parsed.power_a),
+            powerB: num(parsed.power_b),
+            expA: num(parsed.exp_gain_a),
+            expB: num(parsed.exp_gain_b),
+            digest: ev.id?.txDigest,
+            ts: Number.isFinite(ts ?? NaN) ? (ts as number) : Date.now(),
+          };
+        })
+        .filter((r): r is BattleRecord => Boolean(r));
+      setBattleHistory(records);
+    } catch {
+      setBattleHistory([]);
+    }
+  }
+
+  async function battleWithHistory() {
+    if (!canTransact || !creatureId || !creatureIdB) {
+      setResult({ error: "请先选择 A/B Creature。" });
+      return;
+    }
+    try {
+      const tx = buildBattleTx(packageId, creatureId, creatureIdB);
+      const res = await signAndExecute({ transactionBlock: tx });
+      setResult({ digest: res?.digest, raw: res });
+      await loadBattleEvents();
+    } catch (e) {
+      setResult({ error: (e as Error).message });
+    }
+  }
+
   async function loadCreatures() {
     if (!account?.address || !packageId) return;
     try {
@@ -165,6 +271,7 @@ export default function App() {
 
   useEffect(() => {
     loadCreatures();
+    loadBattleEvents();
   }, [account?.address, packageId]);
 
   return (
@@ -184,7 +291,7 @@ export default function App() {
         </div>
       </header>
 
-      <section className="grid">
+      <section className="grid-layout">
         <div className="card">
           <h2>配置</h2>
           <label>
@@ -230,14 +337,22 @@ export default function App() {
               {creatures.map((item) => (
                 <div key={item.id} className="list-item">
                   <div className="list-left">
-                    <CreatureAvatar
-                      genomeHex={item.genomeHex ?? "0x"}
-                      seedHex={item.id}
-                      level={item.level ?? 1}
-                      stage={item.stage ?? 0}
-                      size={64}
-                      label={`Lv ${item.level ?? "-"}`}
-                    />
+                    <button
+                      className="avatar-button"
+                      onClick={() =>
+                        setActiveHistoryId((prev) => (prev === item.id ? null : item.id))
+                      }
+                      title="点击查看对战详情"
+                    >
+                      <CreatureAvatar
+                        genomeHex={item.genomeHex ?? "0x"}
+                        seedHex={item.id}
+                        level={item.level ?? 1}
+                        stage={item.stage ?? 0}
+                        size={64}
+                        label={`Lv ${item.level ?? "-"}`}
+                      />
+                    </button>
                     <div className="meta">
                       <div className="mono">{item.id}</div>
                       <div className="stat-row">
@@ -245,6 +360,7 @@ export default function App() {
                         <span>EXP {item.exp ?? "-"}</span>
                         <span>Stage {item.stage ?? "-"}</span>
                       </div>
+                      <div className="history-hint">点击头像查看对战详情</div>
                     </div>
                   </div>
                   <div className="actions">
@@ -395,11 +511,8 @@ export default function App() {
         <div className="card">
           <h2>对战</h2>
           <p className="hint">同一钱包拥有两只 Creature 才可对战。</p>
-          <button
-            onClick={() => exec(() => buildBattleTx(packageId, creatureId, creatureIdB))}
-          >
-            发起对战
-          </button>
+          <button onClick={battleWithHistory}>发起对战</button>
+          <p className="hint">对战记录来自链上事件（需合约已升级）。</p>
         </div>
 
         <div className="card">
@@ -429,6 +542,52 @@ export default function App() {
           </div>
         </div>
       </section>
+
+      {activeHistoryId ? (
+        <div className="modal-mask" onClick={() => setActiveHistoryId(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <div className="mono">对战历史</div>
+              <button className="ghost" onClick={() => setActiveHistoryId(null)}>
+                关闭
+              </button>
+            </div>
+            <div className="modal-body">
+              {battleHistory
+                .filter((h) => h.a === activeHistoryId || h.b === activeHistoryId)
+                .slice(0, 20)
+                .map((h) => {
+                  const role = h.a === activeHistoryId ? "A" : "B";
+                  const result: string =
+                    h.winner === "?"
+                      ? "?"
+                      : h.winner === "T"
+                      ? "平局"
+                      : h.winner === role
+                      ? "胜"
+                      : "负";
+                  const timeLabel = new Date(h.ts).toLocaleString();
+                  return (
+                    <div key={h.id} className="history-row">
+                      <span className="badge">{result}</span>
+                      <span className="hint">{timeLabel}</span>
+                      <span className="mono">{role === "A" ? h.b : h.a}</span>
+                      <span className="hint">
+                        P {role === "A" ? h.powerA ?? "-" : h.powerB ?? "-"} ↔{" "}
+                        {role === "A" ? h.powerB ?? "-" : h.powerA ?? "-"}
+                      </span>
+                      <span className="hint">
+                        EXP +{role === "A" ? h.expA ?? "-" : h.expB ?? "-"}
+                      </span>
+                    </div>
+                  );
+                })}
+              {battleHistory.filter((h) => h.a === activeHistoryId || h.b === activeHistoryId)
+                .length === 0 ? <p className="hint">暂无对战记录</p> : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

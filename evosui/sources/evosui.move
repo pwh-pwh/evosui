@@ -76,6 +76,19 @@ module evosui::evosui {
         exp_gain_b: u64,
     }
 
+    /// Battle event emitted on-chain.
+    public struct BattleEvent has copy, drop, store {
+        creature_a: sui::object::ID,
+        creature_b: sui::object::ID,
+        winner: u8,
+        power_a: u64,
+        power_b: u64,
+        exp_gain_a: u64,
+        exp_gain_b: u64,
+        epoch: u64,
+        sender: address,
+    }
+
     /// Mint a new creature with a genome payload.
     public fun mint_creature(genome: vector<u8>, ctx: &mut sui::tx_context::TxContext): Creature {
         assert!(vector::length(&genome) <= MAX_GENOME_LEN, 0);
@@ -407,6 +420,17 @@ module evosui::evosui {
         };
         apply_exp(creature_a, exp_a);
         apply_exp(creature_b, exp_b);
+        sui::event::emit(BattleEvent {
+            creature_a: sui::object::id(creature_a),
+            creature_b: sui::object::id(creature_b),
+            winner,
+            power_a,
+            power_b,
+            exp_gain_a: exp_a,
+            exp_gain_b: exp_b,
+            epoch: sui::tx_context::epoch(ctx),
+            sender: sui::tx_context::sender(ctx),
+        });
         BattleOutcome {
             winner,
             power_a,

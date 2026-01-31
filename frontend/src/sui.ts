@@ -116,6 +116,15 @@ export function buildBattleTx(
   return tx;
 }
 
+export function buildBattlePowerTx(packageId: string, creatureId: string) {
+  const tx = new Transaction();
+  tx.moveCall({
+    target: `${packageId}::evosui::battle_power`,
+    arguments: [tx.object(creatureId)],
+  });
+  return tx;
+}
+
 export function buildSnapshotTx(packageId: string, creatureId: string) {
   const tx = new Transaction();
   tx.moveCall({
