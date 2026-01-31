@@ -852,6 +852,12 @@ export default function App() {
 
   return (
     <div className="app">
+      <div className="ambient-bg" aria-hidden="true">
+        <div className="ambient-blob blob-a" />
+        <div className="ambient-blob blob-b" />
+        <div className="ambient-blob blob-c" />
+        <div className="ambient-particles" />
+      </div>
       <AnimatePresence>
         {showLanding ? (
           <motion.div

@@ -18,7 +18,7 @@
 
 @layer components {
   .app {
-    @apply px-6 py-8 pb-16 max-w-[1200px] mx-auto;
+    @apply px-6 py-8 pb-16 max-w-[1200px] mx-auto relative;
   }
 
   .hero {
@@ -409,6 +409,52 @@
     animation-delay: -6s;
   }
 
+  .ambient-bg {
+    @apply fixed inset-0 -z-10 overflow-hidden;
+    pointer-events: none;
+  }
+
+  .ambient-blob {
+    @apply absolute rounded-full blur-3xl opacity-60;
+    mix-blend-mode: screen;
+    background: radial-gradient(circle at 30% 30%, rgba(88, 208, 255, 0.7), rgba(7, 12, 24, 0));
+    animation: blob 16s ease-in-out infinite;
+  }
+
+  .ambient-blob.blob-a {
+    width: 520px;
+    height: 520px;
+    top: -120px;
+    left: -180px;
+  }
+
+  .ambient-blob.blob-b {
+    width: 620px;
+    height: 620px;
+    right: -220px;
+    top: 10%;
+    background: radial-gradient(circle at 30% 30%, rgba(109, 83, 255, 0.6), rgba(7, 12, 24, 0));
+    animation-delay: -6s;
+  }
+
+  .ambient-blob.blob-c {
+    width: 440px;
+    height: 440px;
+    bottom: -160px;
+    left: 30%;
+    background: radial-gradient(circle at 30% 30%, rgba(34, 244, 179, 0.55), rgba(7, 12, 24, 0));
+    animation-delay: -11s;
+  }
+
+  .ambient-particles {
+    @apply absolute inset-0 opacity-40;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.45) 1px, transparent 1px),
+      radial-gradient(rgba(88, 208, 255, 0.35) 1px, transparent 1px);
+    background-size: 120px 120px, 180px 180px;
+    background-position: 0 0, 60px 60px;
+    animation: particles 18s linear infinite;
+  }
+
   .mint-fx {
     @apply fixed inset-0 z-40 flex items-center justify-center bg-black/70;
     backdrop-filter: blur(6px);
@@ -517,6 +563,25 @@
   100% {
     transform: scale(0.8) rotate(360deg);
     opacity: 0.2;
+  }
+}
+
+@keyframes blob {
+  0%,
+  100% {
+    transform: translateY(0) translateX(0) scale(1);
+  }
+  50% {
+    transform: translateY(30px) translateX(-20px) scale(1.08);
+  }
+}
+
+@keyframes particles {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-120px);
   }
 }
 
