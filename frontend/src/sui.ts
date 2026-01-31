@@ -1,4 +1,4 @@
-import { TransactionBlock } from "@mysten/sui/transactions";
+import { Transaction } from "@mysten/sui/transactions";
 
 export function hexToBytes(hex: string): number[] {
   const clean = hex.trim().replace(/^0x/, "");
@@ -18,13 +18,13 @@ export function buildMintTx(
   genomeHex: string,
   recipient: string
 ) {
-  const tx = new TransactionBlock();
+  const tx = new Transaction();
   const genome = hexToBytes(genomeHex);
   const creature = tx.moveCall({
     target: `${packageId}::evosui::mint_creature`,
-    arguments: [tx.pure(genome)],
+    arguments: [tx.pure.vector("u8", genome)],
   });
-  tx.transferObjects([creature], tx.pure(recipient));
+  tx.transferObjects([creature], tx.pure.address(recipient));
   return tx;
 }
 
@@ -35,14 +35,14 @@ export function buildAddOrganTx(
   rarity: number,
   power: number
 ) {
-  const tx = new TransactionBlock();
+  const tx = new Transaction();
   tx.moveCall({
     target: `${packageId}::evosui::add_organ`,
     arguments: [
       tx.object(creatureId),
-      tx.pure(kind),
-      tx.pure(rarity),
-      tx.pure(power),
+      tx.pure.u8(kind),
+      tx.pure.u8(rarity),
+      tx.pure.u64(power),
     ],
   });
   return tx;
@@ -55,14 +55,14 @@ export function buildAddSkillTx(
   power: number,
   cooldown: number
 ) {
-  const tx = new TransactionBlock();
+  const tx = new Transaction();
   tx.moveCall({
     target: `${packageId}::evosui::add_skill`,
     arguments: [
       tx.object(creatureId),
-      tx.pure(element),
-      tx.pure(power),
-      tx.pure(cooldown),
+      tx.pure.u8(element),
+      tx.pure.u64(power),
+      tx.pure.u64(cooldown),
     ],
   });
   return tx;
@@ -73,16 +73,16 @@ export function buildFeedTx(
   creatureId: string,
   foodExp: number
 ) {
-  const tx = new TransactionBlock();
+  const tx = new Transaction();
   tx.moveCall({
     target: `${packageId}::evosui::feed`,
-    arguments: [tx.object(creatureId), tx.pure(foodExp)],
+    arguments: [tx.object(creatureId), tx.pure.u64(foodExp)],
   });
   return tx;
 }
 
 export function buildEvolveTx(packageId: string, creatureId: string) {
-  const tx = new TransactionBlock();
+  const tx = new Transaction();
   tx.moveCall({
     target: `${packageId}::evosui::evolve`,
     arguments: [tx.object(creatureId)],
@@ -95,10 +95,10 @@ export function buildMutateTx(
   creatureId: string,
   seed: number
 ) {
-  const tx = new TransactionBlock();
+  const tx = new Transaction();
   tx.moveCall({
     target: `${packageId}::evosui::mutate`,
-    arguments: [tx.object(creatureId), tx.pure(seed)],
+    arguments: [tx.object(creatureId), tx.pure.u64(seed)],
   });
   return tx;
 }
@@ -108,7 +108,7 @@ export function buildBattleTx(
   creatureA: string,
   creatureB: string
 ) {
-  const tx = new TransactionBlock();
+  const tx = new Transaction();
   tx.moveCall({
     target: `${packageId}::evosui::battle`,
     arguments: [tx.object(creatureA), tx.object(creatureB)],
@@ -117,7 +117,7 @@ export function buildBattleTx(
 }
 
 export function buildSnapshotTx(packageId: string, creatureId: string) {
-  const tx = new TransactionBlock();
+  const tx = new Transaction();
   tx.moveCall({
     target: `${packageId}::creature_stats::snapshot`,
     arguments: [tx.object(creatureId)],

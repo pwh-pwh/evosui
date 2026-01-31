@@ -169,6 +169,34 @@ button.ghost {
   white-space: pre-wrap;
 }
 
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: #101522;
+}
+
+.mono {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
 @media (max-width: 720px) {
   .hero {
     flex-direction: column;

@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ConnectButton,
   useCurrentAccount,
-  useSignAndExecuteTransaction,
+  useSignAndExecuteTransactionBlock,
   useSuiClient,
 } from "@mysten/dapp-kit";
 import {
@@ -23,15 +23,24 @@ type ExecResult = {
   raw?: unknown;
 };
 
+type CreatureItem = {
+  id: string;
+  level?: number;
+  exp?: number;
+  stage?: number;
+};
+
 export default function App() {
   const account = useCurrentAccount();
   const client = useSuiClient();
-  const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction();
+  const { mutateAsync: signAndExecute } = useSignAndExecuteTransactionBlock();
 
   const [packageId, setPackageId] = useState(DEFAULT_PACKAGE_ID);
   const [genomeHex, setGenomeHex] = useState("0x010203");
   const [creatureId, setCreatureId] = useState("");
   const [creatureIdB, setCreatureIdB] = useState("");
+  const [creatures, setCreatures] = useState<CreatureItem[]>([]);
+  const [creatureError, setCreatureError] = useState("");
   const [kind, setKind] = useState(2);
   const [rarity, setRarity] = useState(2);
   const [power, setPower] = useState(100);
@@ -58,7 +67,7 @@ export default function App() {
     try {
       const tx = txBuilder();
       const res = await signAndExecute({
-        transaction: tx,
+        transactionBlock: tx,
       });
       setResult({ digest: res?.digest, raw: res });
     } catch (e) {
@@ -92,6 +101,44 @@ export default function App() {
       setSnapshot((e as Error).message);
     }
   }
+
+  async function loadCreatures() {
+    if (!account?.address || !packageId) return;
+    try {
+      setCreatureError("");
+      const resp = await client.getOwnedObjects({
+        owner: account.address,
+        filter: {
+          StructType: `${packageId}::evosui::Creature`,
+        },
+        options: {
+          showContent: true,
+          showType: true,
+        },
+      });
+      const items: CreatureItem[] = resp.data
+        .map((obj) => {
+          const id = obj.data?.objectId;
+          if (!id) return null;
+          const content = obj.data?.content as
+            | { dataType: "moveObject"; fields?: Record<string, unknown> }
+            | undefined;
+          const fields = content?.dataType === "moveObject" ? content.fields : undefined;
+          const level = typeof fields?.level === "string" ? Number(fields.level) : undefined;
+          const exp = typeof fields?.exp === "string" ? Number(fields.exp) : undefined;
+          const stage = typeof fields?.stage === "string" ? Number(fields.stage) : undefined;
+          return { id, level, exp, stage };
+        })
+        .filter((item): item is CreatureItem => Boolean(item));
+      setCreatures(items);
+    } catch (e) {
+      setCreatureError((e as Error).message);
+    }
+  }
+
+  useEffect(() => {
+    loadCreatures();
+  }, [account?.address, packageId]);
 
   return (
     <div className="app">
@@ -140,6 +187,46 @@ export default function App() {
           <button className="ghost" onClick={loadCreature}>
             读取 Creature 对象
           </button>
+        </div>
+
+        <div className="card">
+          <h2>我的 Creature</h2>
+          <button className="ghost" onClick={loadCreatures}>
+            刷新列表
+          </button>
+          {creatureError ? (
+            <p className="hint">错误：{creatureError}</p>
+          ) : creatures.length === 0 ? (
+            <p className="hint">暂无 Creature，先 Mint 一个。</p>
+          ) : (
+            <div className="list">
+              {creatures.map((item) => (
+                <div key={item.id} className="list-item">
+                  <div>
+                    <div className="mono">{item.id}</div>
+                    <div className="hint">
+                      Lv {item.level ?? "-"} · EXP {item.exp ?? "-"} · Stage{" "}
+                      {item.stage ?? "-"}
+                    </div>
+                  </div>
+                  <div className="actions">
+                    <button
+                      className="ghost"
+                      onClick={() => setCreatureId(item.id)}
+                    >
+                      设为A
+                    </button>
+                    <button
+                      className="ghost"
+                      onClick={() => setCreatureIdB(item.id)}
+                    >
+                      设为B
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="card">
