@@ -57,6 +57,141 @@ type ChainBattleEvent = {
   sender?: string;
 };
 
+const I18N = {
+  zh: {
+    tag: "EvoSui · On-chain Evolution",
+    title: "生物进化的链上实验室",
+    subtitle: "用可编程交易块驱动生命体的成长、变异与对战。输入 Package ID 与对象 ID 即可直接对接合约。",
+    disconnected: "未连接",
+    language: "EN",
+    config: "配置",
+    packageId: "Package ID",
+    creatureId: "Creature ID",
+    creatureIdB: "Creature B ID",
+    readCreature: "读取 Creature 对象",
+    myCreatures: "我的 Creature",
+    refreshList: "刷新列表",
+    errorPrefix: "错误：",
+    emptyCreatures: "暂无 Creature，先 Mint 一个。",
+    clickAvatarHint: "点击头像查看对战详情",
+    setA: "设为A",
+    setB: "设为B",
+    mint: "Mint",
+    genomeHex: "Genome Hex",
+    createCreature: "创建 Creature",
+    mintHint: "交易完成后在钱包里找到新对象 ID，再填到 Creature ID。",
+    organsSkills: "器官 / 技能",
+    kind: "Kind",
+    rarity: "Rarity",
+    power: "Power",
+    addOrgan: "添加器官",
+    element: "Element",
+    skillPower: "Skill Power",
+    cooldown: "Cooldown",
+    addSkill: "添加技能",
+    growth: "成长",
+    foodExp: "Food EXP",
+    feed: "喂养",
+    nextExp: "下一阶段所需经验",
+    evolve: "进化",
+    evolveNeed: "经验不足，先喂养提升 EXP。",
+    mutationSeed: "Mutation Seed",
+    mutate: "变异",
+    battle: "对战",
+    battleHint: "同一钱包拥有两只 Creature 才可对战。",
+    battleStart: "发起对战",
+    battleHistoryHint: "对战记录来自链上事件（需合约已升级）。",
+    snapshot: "只读快照",
+    snapshotHint: "使用 devInspect 读取 snapshot 返回值。",
+    getSnapshot: "获取 Snapshot",
+    resultTitle: "执行结果 / 对象数据",
+    txResult: "交易结果",
+    creatureObject: "Creature 对象",
+    noSnapshot: "暂无快照",
+    noObjectData: "暂无对象数据",
+    battleHistoryTitle: "对战历史",
+    close: "关闭",
+    noBattleHistory: "暂无对战记录",
+    battleEngaged: "Battle Engaged",
+    battleSettling: "链上对战结算中…",
+    draw: "平局",
+    aWin: "A 胜",
+    bWin: "B 胜",
+    selectABFirst: "请先选择 A/B Creature。",
+    connectWalletSetPackage: "请先连接钱包并填写 Package ID。",
+    levelShort: "Lv",
+    expShort: "EXP",
+    stageShort: "Stage",
+  },
+  en: {
+    tag: "EvoSui · On-chain Evolution",
+    title: "On-chain Evolution Lab",
+    subtitle: "Drive growth, mutation, and battles with programmable transactions. Fill Package ID and object ID to interact.",
+    disconnected: "Disconnected",
+    language: "中文",
+    config: "Config",
+    packageId: "Package ID",
+    creatureId: "Creature ID",
+    creatureIdB: "Creature B ID",
+    readCreature: "Load Creature Object",
+    myCreatures: "My Creatures",
+    refreshList: "Refresh List",
+    errorPrefix: "Error: ",
+    emptyCreatures: "No creatures yet. Mint one first.",
+    clickAvatarHint: "Click avatar to view battle details",
+    setA: "Set A",
+    setB: "Set B",
+    mint: "Mint",
+    genomeHex: "Genome Hex",
+    createCreature: "Create Creature",
+    mintHint: "After the tx, find the new object ID in wallet and paste into Creature ID.",
+    organsSkills: "Organs / Skills",
+    kind: "Kind",
+    rarity: "Rarity",
+    power: "Power",
+    addOrgan: "Add Organ",
+    element: "Element",
+    skillPower: "Skill Power",
+    cooldown: "Cooldown",
+    addSkill: "Add Skill",
+    growth: "Growth",
+    foodExp: "Food EXP",
+    feed: "Feed",
+    nextExp: "Required EXP for next stage",
+    evolve: "Evolve",
+    evolveNeed: "Not enough EXP. Feed first.",
+    mutationSeed: "Mutation Seed",
+    mutate: "Mutate",
+    battle: "Battle",
+    battleHint: "Both creatures must be owned by the same wallet.",
+    battleStart: "Start Battle",
+    battleHistoryHint: "History is sourced from on-chain events (requires upgraded package).",
+    snapshot: "Read-only Snapshot",
+    snapshotHint: "Use devInspect to read snapshot return values.",
+    getSnapshot: "Get Snapshot",
+    resultTitle: "Execution Result / Object Data",
+    txResult: "Transaction Result",
+    creatureObject: "Creature Object",
+    noSnapshot: "No snapshot",
+    noObjectData: "No object data",
+    battleHistoryTitle: "Battle History",
+    close: "Close",
+    noBattleHistory: "No battle history",
+    battleEngaged: "Battle Engaged",
+    battleSettling: "Resolving on-chain battle…",
+    draw: "Draw",
+    aWin: "A Wins",
+    bWin: "B Wins",
+    selectABFirst: "Select A/B creatures first.",
+    connectWalletSetPackage: "Connect wallet and set Package ID first.",
+    levelShort: "Lv",
+    expShort: "EXP",
+    stageShort: "Stage",
+  },
+} as const;
+
+type Lang = keyof typeof I18N;
+
 function bytesToHex(bytes: number[]) {
   return `0x${bytes.map((b) => b.toString(16).padStart(2, "0")).join("")}`;
 }
@@ -93,6 +228,10 @@ export default function App() {
   const client = useSuiClient();
   const { mutateAsync: signAndExecute } = useSignAndExecuteTransactionBlock();
 
+  const [lang, setLang] = useState<Lang>(() => {
+    const saved = localStorage.getItem("evosui.lang");
+    return saved === "en" || saved === "zh" ? saved : "zh";
+  });
   const [packageId, setPackageId] = useState(DEFAULT_PACKAGE_ID);
   const [genomeHex, setGenomeHex] = useState("0x010203");
   const [creatureId, setCreatureId] = useState("");
@@ -114,6 +253,12 @@ export default function App() {
   const [snapshot, setSnapshot] = useState<string>("");
   const [creatureJson, setCreatureJson] = useState<string>("");
 
+  useEffect(() => {
+    localStorage.setItem("evosui.lang", lang);
+  }, [lang]);
+
+  const t = (key: keyof (typeof I18N)["zh"]) => I18N[lang][key];
+
   const canTransact = Boolean(account?.address && packageId);
   const selectedCreature = creatures.find((c) => c.id === creatureId);
   const selectedCreatureB = creatures.find((c) => c.id === creatureIdB);
@@ -125,13 +270,13 @@ export default function App() {
       : false;
 
   const headerStatus = useMemo(() => {
-    if (!account?.address) return "Disconnected";
+    if (!account?.address) return t("disconnected");
     return `${account.address.slice(0, 6)}...${account.address.slice(-4)}`;
-  }, [account?.address]);
+  }, [account?.address, lang]);
 
   async function exec(txBuilder: () => any) {
     if (!canTransact) {
-      setResult({ error: "Connect wallet and set Package ID first." });
+      setResult({ error: t("connectWalletSetPackage") });
       return;
     }
     try {
@@ -169,20 +314,6 @@ export default function App() {
       setSnapshot(JSON.stringify(resp, null, 2));
     } catch (e) {
       setSnapshot((e as Error).message);
-    }
-  }
-
-  async function getBattlePower(id: string): Promise<number | undefined> {
-    if (!account?.address || !packageId || !id) return undefined;
-    try {
-      const tx = buildBattlePowerTx(packageId, id);
-      const resp = await client.devInspectTransactionBlock({
-        sender: account.address,
-        transactionBlock: tx,
-      });
-      return parseU64(resp);
-    } catch {
-      return undefined;
     }
   }
 
@@ -237,7 +368,7 @@ export default function App() {
 
   async function battleWithHistory() {
     if (!canTransact || !creatureId || !creatureIdB) {
-      setResult({ error: "请先选择 A/B Creature。" });
+      setResult({ error: t("selectABFirst") });
       return;
     }
     setBattleAnimating(true);
@@ -298,24 +429,27 @@ export default function App() {
     <div className="app">
       <header className="hero">
         <div>
-          <div className="tag">EvoSui · On-chain Evolution</div>
-          <h1>生物进化的链上实验室</h1>
-          <p>
-            用可编程交易块驱动生命体的成长、变异与对战。输入 Package ID
-            与对象 ID 即可直接对接合约。
-          </p>
+          <div className="tag">{t("tag")}</div>
+          <h1>{t("title")}</h1>
+          <p>{t("subtitle")}</p>
         </div>
         <div className="wallet">
           <div className="status">{headerStatus}</div>
+          <button
+            className="ghost"
+            onClick={() => setLang(lang === "zh" ? "en" : "zh")}
+          >
+            {t("language")}
+          </button>
           <ConnectButton />
         </div>
       </header>
 
       <section className="grid-layout">
         <div className="card">
-          <h2>配置</h2>
+          <h2>{t("config")}</h2>
           <label>
-            Package ID
+            {t("packageId")}
             <input
               value={packageId}
               onChange={(e) => setPackageId(e.target.value.trim())}
@@ -323,7 +457,7 @@ export default function App() {
             />
           </label>
           <label>
-            Creature ID
+            {t("creatureId")}
             <input
               value={creatureId}
               onChange={(e) => setCreatureId(e.target.value.trim())}
@@ -331,7 +465,7 @@ export default function App() {
             />
           </label>
           <label>
-            Creature B ID
+            {t("creatureIdB")}
             <input
               value={creatureIdB}
               onChange={(e) => setCreatureIdB(e.target.value.trim())}
@@ -339,19 +473,22 @@ export default function App() {
             />
           </label>
           <button className="ghost" onClick={loadCreature}>
-            读取 Creature 对象
+            {t("readCreature")}
           </button>
         </div>
 
         <div className="card">
-          <h2>我的 Creature</h2>
+          <h2>{t("myCreatures")}</h2>
           <button className="ghost" onClick={loadCreatures}>
-            刷新列表
+            {t("refreshList")}
           </button>
           {creatureError ? (
-            <p className="hint">错误：{creatureError}</p>
+            <p className="hint">
+              {t("errorPrefix")}
+              {creatureError}
+            </p>
           ) : creatures.length === 0 ? (
-            <p className="hint">暂无 Creature，先 Mint 一个。</p>
+            <p className="hint">{t("emptyCreatures")}</p>
           ) : (
             <div className="list">
               {creatures.map((item) => (
@@ -362,7 +499,7 @@ export default function App() {
                       onClick={() =>
                         setActiveHistoryId((prev) => (prev === item.id ? null : item.id))
                       }
-                      title="点击查看对战详情"
+                      title={t("clickAvatarHint")}
                     >
                       <CreatureAvatar
                         genomeHex={item.genomeHex ?? "0x"}
@@ -370,17 +507,23 @@ export default function App() {
                         level={item.level ?? 1}
                         stage={item.stage ?? 0}
                         size={64}
-                        label={`Lv ${item.level ?? "-"}`}
+                        label={`${t("levelShort")} ${item.level ?? "-"}`}
                       />
                     </button>
                     <div className="meta">
                       <div className="mono">{item.id}</div>
                       <div className="stat-row">
-                        <span>Lv {item.level ?? "-"}</span>
-                        <span>EXP {item.exp ?? "-"}</span>
-                        <span>Stage {item.stage ?? "-"}</span>
+                        <span>
+                          {t("levelShort")} {item.level ?? "-"}
+                        </span>
+                        <span>
+                          {t("expShort")} {item.exp ?? "-"}
+                        </span>
+                        <span>
+                          {t("stageShort")} {item.stage ?? "-"}
+                        </span>
                       </div>
-                      <div className="history-hint">点击头像查看对战详情</div>
+                      <div className="history-hint">{t("clickAvatarHint")}</div>
                     </div>
                   </div>
                   <div className="actions">
@@ -388,13 +531,13 @@ export default function App() {
                       className="ghost"
                       onClick={() => setCreatureId(item.id)}
                     >
-                      设为A
+                      {t("setA")}
                     </button>
                     <button
                       className="ghost"
                       onClick={() => setCreatureIdB(item.id)}
                     >
-                      设为B
+                      {t("setB")}
                     </button>
                   </div>
                 </div>
@@ -404,9 +547,9 @@ export default function App() {
         </div>
 
         <div className="card">
-          <h2>Mint</h2>
+          <h2>{t("mint")}</h2>
           <label>
-            Genome Hex
+            {t("genomeHex")}
             <input
               value={genomeHex}
               onChange={(e) => setGenomeHex(e.target.value)}
@@ -418,18 +561,16 @@ export default function App() {
               exec(() => buildMintTx(packageId, genomeHex, account!.address))
             }
           >
-            创建 Creature
+            {t("createCreature")}
           </button>
-          <p className="hint">
-            交易完成后在钱包里找到新对象 ID，再填到 Creature ID。
-          </p>
+          <p className="hint">{t("mintHint")}</p>
         </div>
 
         <div className="card">
-          <h2>器官 / 技能</h2>
+          <h2>{t("organsSkills")}</h2>
           <div className="row">
             <label>
-              Kind
+              {t("kind")}
               <input
                 type="number"
                 value={kind}
@@ -437,7 +578,7 @@ export default function App() {
               />
             </label>
             <label>
-              Rarity
+              {t("rarity")}
               <input
                 type="number"
                 value={rarity}
@@ -445,7 +586,7 @@ export default function App() {
               />
             </label>
             <label>
-              Power
+              {t("power")}
               <input
                 type="number"
                 value={power}
@@ -460,11 +601,11 @@ export default function App() {
               )
             }
           >
-            添加器官
+            {t("addOrgan")}
           </button>
           <div className="row">
             <label>
-              Element
+              {t("element")}
               <input
                 type="number"
                 value={element}
@@ -472,7 +613,7 @@ export default function App() {
               />
             </label>
             <label>
-              Skill Power
+              {t("skillPower")}
               <input
                 type="number"
                 value={power}
@@ -480,7 +621,7 @@ export default function App() {
               />
             </label>
             <label>
-              Cooldown
+              {t("cooldown")}
               <input
                 type="number"
                 value={cooldown}
@@ -495,14 +636,14 @@ export default function App() {
               )
             }
           >
-            添加技能
+            {t("addSkill")}
           </button>
         </div>
 
         <div className="card">
-          <h2>成长</h2>
+          <h2>{t("growth")}</h2>
           <label>
-            Food EXP
+            {t("foodExp")}
             <input
               type="number"
               value={foodExp}
@@ -510,23 +651,23 @@ export default function App() {
             />
           </label>
           <button onClick={() => exec(() => buildFeedTx(packageId, creatureId, foodExp))}>
-            喂养
+            {t("feed")}
           </button>
           <div className="hint">
-            下一阶段所需经验：{" "}
+            {t("nextExp")}：{" "}
             {nextStageRequiredExp != null ? nextStageRequiredExp : "-"}
           </div>
           <button
             disabled={!canEvolve}
             onClick={() => exec(() => buildEvolveTx(packageId, creatureId))}
           >
-            进化
+            {t("evolve")}
           </button>
           {!canEvolve && creatureId ? (
-            <div className="hint">经验不足，先喂养提升 EXP。</div>
+            <div className="hint">{t("evolveNeed")}</div>
           ) : null}
           <label>
-            Mutation Seed
+            {t("mutationSeed")}
             <input
               type="number"
               value={seed}
@@ -534,13 +675,13 @@ export default function App() {
             />
           </label>
           <button onClick={() => exec(() => buildMutateTx(packageId, creatureId, seed))}>
-            变异
+            {t("mutate")}
           </button>
         </div>
 
         <div className="card">
-          <h2>对战</h2>
-          <p className="hint">同一钱包拥有两只 Creature 才可对战。</p>
+          <h2>{t("battle")}</h2>
+          <p className="hint">{t("battleHint")}</p>
           <div className={`battle-stage ${battleAnimating ? "is-animating" : ""}`}>
             <div className="battle-orb a">
               {selectedCreature ? (
@@ -566,33 +707,33 @@ export default function App() {
             </div>
             <div className="battle-spark" />
           </div>
-          <button onClick={battleWithHistory}>发起对战</button>
-          <p className="hint">对战记录来自链上事件（需合约已升级）。</p>
+          <button onClick={battleWithHistory}>{t("battleStart")}</button>
+          <p className="hint">{t("battleHistoryHint")}</p>
         </div>
 
         <div className="card">
-          <h2>只读快照</h2>
-          <p className="hint">使用 devInspect 读取 snapshot 返回值。</p>
+          <h2>{t("snapshot")}</h2>
+          <p className="hint">{t("snapshotHint")}</p>
           <button className="ghost" onClick={devInspectSnapshot}>
-            获取 Snapshot
+            {t("getSnapshot")}
           </button>
-          <pre className="code">{snapshot || "暂无快照"}</pre>
+          <pre className="code">{snapshot || t("noSnapshot")}</pre>
         </div>
 
         <div className="card full">
-          <h2>执行结果 / 对象数据</h2>
+          <h2>{t("resultTitle")}</h2>
           <div className="split">
             <div>
-              <div className="label">交易结果</div>
+              <div className="label">{t("txResult")}</div>
               <pre className="code">
                 {result.error
-                  ? `Error: ${result.error}`
+                  ? `${t("errorPrefix")}${result.error}`
                   : JSON.stringify(result, null, 2)}
               </pre>
             </div>
             <div>
-              <div className="label">Creature 对象</div>
-              <pre className="code">{creatureJson || "暂无对象数据"}</pre>
+              <div className="label">{t("creatureObject")}</div>
+              <pre className="code">{creatureJson || t("noObjectData")}</pre>
             </div>
           </div>
         </div>
@@ -602,9 +743,9 @@ export default function App() {
         <div className="modal-mask" onClick={() => setActiveHistoryId(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-head">
-              <div className="mono">对战历史</div>
+              <div className="mono">{t("battleHistoryTitle")}</div>
               <button className="ghost" onClick={() => setActiveHistoryId(null)}>
-                关闭
+                {t("close")}
               </button>
             </div>
             <div className="modal-body">
@@ -617,28 +758,30 @@ export default function App() {
                     h.winner === "?"
                       ? "?"
                       : h.winner === "T"
-                      ? "平局"
+                      ? t("draw")
                       : h.winner === role
-                      ? "胜"
-                      : "负";
-                  const timeLabel = new Date(h.ts).toLocaleString();
+                      ? t("aWin")
+                      : t("bWin");
+                  const timeLabel = new Date(h.ts).toLocaleString(
+                    lang === "zh" ? "zh-CN" : "en-US"
+                  );
                   return (
                     <div key={h.id} className="history-row">
                       <span className="badge">{result}</span>
                       <span className="hint">{timeLabel}</span>
                       <span className="mono">{role === "A" ? h.b : h.a}</span>
                       <span className="hint">
-                        P {role === "A" ? h.powerA ?? "-" : h.powerB ?? "-"} ↔{" "}
+                        {t("power")} {role === "A" ? h.powerA ?? "-" : h.powerB ?? "-"} ↔{" "}
                         {role === "A" ? h.powerB ?? "-" : h.powerA ?? "-"}
                       </span>
                       <span className="hint">
-                        EXP +{role === "A" ? h.expA ?? "-" : h.expB ?? "-"}
+                        {t("expShort")} +{role === "A" ? h.expA ?? "-" : h.expB ?? "-"}
                       </span>
                     </div>
                   );
                 })}
               {battleHistory.filter((h) => h.a === activeHistoryId || h.b === activeHistoryId)
-                .length === 0 ? <p className="hint">暂无对战记录</p> : null}
+                .length === 0 ? <p className="hint">{t("noBattleHistory")}</p> : null}
             </div>
           </div>
         </div>
@@ -647,7 +790,7 @@ export default function App() {
       {battleAnimating ? (
         <div className="battle-modal">
           <div className="battle-modal-card">
-            <div className="battle-title">Battle Engaged</div>
+            <div className="battle-title">{t("battleEngaged")}</div>
             <div className="battle-stage is-animating battle-stage-modal">
               <div className="battle-orb a">
                 {selectedCreature ? (
@@ -678,13 +821,13 @@ export default function App() {
             {battleOutcome ? (
               <div className="battle-result">
                 {battleOutcome === "T"
-                  ? "平局"
+                  ? t("draw")
                   : battleOutcome === "A"
-                  ? "A 胜"
-                  : "B 胜"}
+                  ? t("aWin")
+                  : t("bWin")}
               </div>
             ) : null}
-            <div className="hint">链上对战结算中…</div>
+            <div className="hint">{t("battleSettling")}</div>
           </div>
         </div>
       ) : null}
