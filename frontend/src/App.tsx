@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ConnectButton,
   useCurrentAccount,
-  useSignAndExecuteTransactionBlock,
+  useSignAndExecuteTransaction,
   useSuiClient,
 } from "@mysten/dapp-kit";
 import {
@@ -74,6 +74,7 @@ type ArenaItem = {
 
 type ArenaCreatureItem = {
   id: string;
+  owner?: string;
   level?: number;
   exp?: number;
   stage?: number;
@@ -100,6 +101,8 @@ const I18N = {
     unclaimedCreatures: "未取回生物",
     refreshUnclaimed: "刷新未取回",
     noUnclaimed: "暂无未取回生物",
+    owner: "Owner",
+    mine: "我的",
     loading: "加载中…",
     loadFailed: "加载失败：",
     myCreatures: "我的 Creature",
@@ -182,6 +185,8 @@ const I18N = {
     unclaimedCreatures: "Unclaimed Creatures",
     refreshUnclaimed: "Refresh Unclaimed",
     noUnclaimed: "No unclaimed creatures",
+    owner: "Owner",
+    mine: "Mine",
     loading: "Loading…",
     loadFailed: "Load failed: ",
     myCreatures: "My Creatures",
@@ -283,7 +288,7 @@ function num(v?: string | number): number | undefined {
 export default function App() {
   const account = useCurrentAccount();
   const client = useSuiClient();
-  const { mutateAsync: signAndExecute } = useSignAndExecuteTransactionBlock();
+  const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction();
 
   const [lang, setLang] = useState<Lang>(() => {
     const saved = localStorage.getItem("evosui.lang");
@@ -347,7 +352,7 @@ export default function App() {
     try {
       const tx = await txBuilder();
       const res = await signAndExecute({
-        transactionBlock: tx,
+        transaction: tx,
       });
       setResult({ digest: res?.digest, raw: res });
     } catch (e) {
@@ -443,19 +448,17 @@ export default function App() {
       const fields = (arenaObj.data?.content as
         | { dataType: "moveObject"; fields?: Record<string, unknown> }
         | undefined)?.fields;
-      const creaturesField = fields?.creatures as
+      const creaturesField = fields?.creatures as Record<string, unknown> | string | undefined;
+      const tableCandidates = [
+        creaturesField,
+        (creaturesField as { id?: unknown })?.id,
+        (creaturesField as { fields?: { id?: unknown } })?.fields?.id,
+        (creaturesField as { fields?: { id?: { id?: unknown } } })?.fields?.id?.id,
+        (creaturesField as { id?: { id?: unknown } })?.id?.id,
+      ];
+      const tableId = tableCandidates.find((cand) => typeof cand === "string") as
         | string
-        | { id?: string; id?: { id?: string } }
-        | { id?: { id?: string } }
         | undefined;
-      const tableId =
-        typeof creaturesField === "string"
-          ? creaturesField
-          : typeof (creaturesField as { id?: string })?.id === "string"
-          ? (creaturesField as { id?: string }).id
-          : typeof (creaturesField as { id?: { id?: string } })?.id?.id === "string"
-          ? (creaturesField as { id?: { id?: string } }).id!.id
-          : undefined;
       if (!tableId) {
         setArenaCreatures([]);
         return;
@@ -488,13 +491,12 @@ export default function App() {
             | undefined;
           const fields = content?.dataType === "moveObject" ? content.fields : undefined;
           if (!id || !fields) return null;
-          const owner = fields.owner as string | undefined;
-          if (!owner || owner !== account.address) return null;
+          const owner = typeof fields.owner === "string" ? fields.owner : undefined;
           const level = typeof fields.level === "string" ? Number(fields.level) : undefined;
           const exp = typeof fields.exp === "string" ? Number(fields.exp) : undefined;
           const stage = typeof fields.stage === "string" ? Number(fields.stage) : undefined;
           const genomeHex = extractGenomeHex(fields);
-          return { id, level, exp, stage, genomeHex };
+          return { id, owner, level, exp, stage, genomeHex };
         })
         .filter((item): item is ArenaCreatureItem => Boolean(item));
       setArenaCreatures(items);
@@ -511,20 +513,25 @@ export default function App() {
     try {
       const tx = buildCreateArenaTx(packageId);
       const res = await signAndExecute({
-        transactionBlock: tx,
-        options: { showEffects: true, showObjectChanges: true },
+        transaction: tx,
       });
       setResult({ digest: res?.digest, raw: res });
-      const created = res?.objectChanges?.find(
-        (change) =>
-          change.type === "created" &&
-          "objectType" in change &&
-          typeof change.objectType === "string" &&
-          change.objectType.includes("::evosui::Arena")
-      );
-      if (created && "objectId" in created) {
-        setArenaId(String(created.objectId));
-        loadArenas();
+      if (res?.digest) {
+        const txBlock = await client.getTransactionBlock({
+          digest: res.digest,
+          options: { showObjectChanges: true },
+        });
+        const created = txBlock.objectChanges?.find(
+          (change) =>
+            change.type === "created" &&
+            "objectType" in change &&
+            typeof change.objectType === "string" &&
+            change.objectType.includes("::evosui::Arena")
+        );
+        if (created && "objectId" in created) {
+          setArenaId(String(created.objectId));
+          loadArenas();
+        }
       }
     } catch (e) {
       setResult({ error: (e as Error).message });
@@ -604,7 +611,7 @@ export default function App() {
             creatureIdB
           )
         : buildBattleTx(packageId, creatureId, creatureIdB);
-      const res = await signAndExecute({ transactionBlock: tx });
+      const res = await signAndExecute({ transaction: tx });
       setResult({ digest: res?.digest, raw: res });
       await loadBattleEvents();
     } catch (e) {
@@ -659,6 +666,18 @@ export default function App() {
   useEffect(() => {
     loadArenaCreatures();
   }, [arenaId, account?.address]);
+
+  useEffect(() => {
+    if (!arenaId || arenaCreatures.length === 0) return;
+    const ids = new Set(arenaCreatures.map((c) => c.id));
+    if (!creatureId || !ids.has(creatureId)) {
+      setCreatureId(arenaCreatures[0].id);
+    }
+    if (!creatureIdB || !ids.has(creatureIdB)) {
+      const fallback = arenaCreatures.find((c) => c.id !== arenaCreatures[0].id);
+      if (fallback) setCreatureIdB(fallback.id);
+    }
+  }, [arenaId, arenaCreatures]);
 
   return (
     <div className="app">
@@ -1060,8 +1079,10 @@ export default function App() {
                 <p className="hint">{t("noUnclaimed")}</p>
               ) : (
                 <div className="list compact">
-                  {arenaCreatures.map((item) => (
-                    <div key={item.id} className="list-item">
+                  {arenaCreatures.map((item) => {
+                    const isMine = item.owner === account?.address;
+                    return (
+                      <div key={item.id} className="list-item">
                       <div className="list-left">
                         <CreatureAvatar
                           genomeHex={item.genomeHex ?? "0x"}
@@ -1072,6 +1093,15 @@ export default function App() {
                         />
                         <div className="meta">
                           <div className="mono">{item.id}</div>
+                          <div className="stat-row">
+                            <span>
+                              {t("owner")}{" "}
+                              {item.owner
+                                ? `${item.owner.slice(0, 6)}...${item.owner.slice(-4)}`
+                                : "-"}
+                            </span>
+                            {isMine ? <span className="badge">{t("mine")}</span> : null}
+                          </div>
                           <div className="stat-row">
                             <span>
                               {t("levelShort")} {item.level ?? "-"}
@@ -1094,7 +1124,8 @@ export default function App() {
                         </button>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
