@@ -8,7 +8,9 @@
 - 链上生物体：基因、等级、阶段、器官、技能全在链上
 - 动态遗传：变异 / 进化 / 繁殖形成“生命感”
 - 原子化对战：胜负、经验、事件一次交易完成
+- 共享对战场：跨钱包对战（Arena）
 - 前端实时：自动加载生物列表、头像动态渲染、对战动画与记录
+- 多语言：中英切换
 
 ## 目录结构
 - `evosui/`：Sui Move 合约
@@ -18,8 +20,8 @@
 
 | 模块 | 功能 |
 | --- | --- |
-| 合约 | Creature 对象、基因变异、喂养、进化、繁殖、战力计算、BattleEvent |
-| 前端 | 钱包连接、列表加载、动态头像、对战动画、链上历史 |
+| 合约 | Creature 对象、基因变异、喂养、进化、繁殖、战力计算、BattleEvent、Arena 共享对战场、ArenaCreatedEvent |
+| 前端 | 钱包连接、列表加载、动态头像、对战动画、链上历史、Arena 列表与未取回列表 |
 
 ## 合约入口
 - `evosui/sources/evosui.move`
@@ -35,6 +37,10 @@ npm run dev
 ```
 访问：`http://localhost:5173/`
 
+依赖版本（关键）：
+- `@mysten/sui` ^2.1.0
+- `@mysten/dapp-kit` ^1.0.1
+
 ### 合约
 ```bash
 cd evosui
@@ -45,14 +51,14 @@ sui move test
 ## Testnet 发布信息
 当前默认 Package ID（前端已内置）：
 ```
-0xe0bf7ca833eea10f2d9f277fa50421fa33b4c0dce4c424a674644602a6c530b3
+0xe1f05acadf66d4fa4708f3bcef31fe6ad98596f0900267e1c97853d1608b4dff
 ```
 对应位置：`frontend/src/config.ts`
 
 重新发布：
 ```bash
 cd evosui
-sui client publish --gas-budget 100000000
+sui client publish --gas-budget 300000000
 ```
 发布后更新 `frontend/src/config.ts`。
 
@@ -63,10 +69,17 @@ sui client publish --gas-budget 100000000
 4. 添加器官/技能提升战力
 5. 对战查看结果与历史记录
 
+## 使用流程（共享对战场 Arena）
+1. 连接钱包并创建 Arena（会自动写入 Arena ID）
+2. A/B 双方分别进入 Arena（点击“入场”）
+3. 任意一方点击“发起对战”
+4. 结束后各自“取回”生物
+
 ## 规则提示
 - 进化条件：`exp >= (stage+1) * 100`
-- 对战要求：同一钱包拥有 A/B 两只生物
+- 对战要求：同一钱包可直接对战；跨钱包需使用 Arena
 - 对战历史来源：链上 `BattleEvent`
+- Arena 列表来源：链上 `ArenaCreatedEvent`
 
 ## 常见问题
 
