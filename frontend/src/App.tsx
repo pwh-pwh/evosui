@@ -104,6 +104,7 @@ const I18N = {
     noUnclaimed: "暂无未取回生物",
     owner: "Owner",
     mine: "我的",
+    withdraw: "取回",
     loading: "加载中…",
     loadFailed: "加载失败：",
     myCreatures: "我的 Creature",
@@ -188,6 +189,7 @@ const I18N = {
     noUnclaimed: "No unclaimed creatures",
     owner: "Owner",
     mine: "Mine",
+    withdraw: "Withdraw",
     loading: "Loading…",
     loadFailed: "Load failed: ",
     myCreatures: "My Creatures",
@@ -504,55 +506,58 @@ export default function App() {
         return;
       }
       const keyByObjectId = new Map(entries.map((entry) => [entry.objectId, entry.key]));
-      let creatureIds = entries
-        .filter(
-          (entry) =>
-            entry.type === "DynamicObject" ||
-            (entry.objectType && entry.objectType.includes("::Creature"))
-        )
-        .map((entry) => entry.objectId)
-        .filter(Boolean);
-      if (creatureIds.length === 0) {
-        const dynamicObjs = await client.multiGetObjects({
-          ids: entries.map((entry) => entry.objectId),
-          options: { showContent: true },
-        });
-        creatureIds = dynamicObjs
-          .map((obj) => {
-            const content = obj.data?.content as
-              | { dataType: "moveObject"; fields?: Record<string, unknown> }
-              | undefined;
-            const fields = content?.dataType === "moveObject" ? content.fields : undefined;
-            const valueField = fields?.value as { id?: string } | undefined;
-            return typeof valueField?.id === "string" ? valueField.id : null;
-          })
-          .filter((id): id is string => Boolean(id));
-      }
-      if (creatureIds.length === 0) {
-        setArenaCreatures([]);
-        return;
-      }
-      const creaturesResp = await client.multiGetObjects({
-        ids: creatureIds,
+      const dynamicObjs = await client.multiGetObjects({
+        ids: entries.map((entry) => entry.objectId),
         options: { showContent: true },
       });
-      const items: ArenaCreatureItem[] = creaturesResp
+      const items: ArenaCreatureItem[] = dynamicObjs
         .map((obj) => {
-          const id = obj.data?.objectId;
           const content = obj.data?.content as
-            | { dataType: "moveObject"; fields?: Record<string, unknown> }
+            | { dataType: "moveObject"; fields?: Record<string, unknown>; type?: string }
             | undefined;
           const fields = content?.dataType === "moveObject" ? content.fields : undefined;
-          if (!id || !fields) return null;
-          const owner = typeof fields.owner === "string" ? fields.owner : undefined;
-          const level = typeof fields.level === "string" ? Number(fields.level) : undefined;
-          const exp = typeof fields.exp === "string" ? Number(fields.exp) : undefined;
-          const stage = typeof fields.stage === "string" ? Number(fields.stage) : undefined;
-          const genomeHex = extractGenomeHex(fields);
-          return { id, owner, key: keyByObjectId.get(id) ?? id, level, exp, stage, genomeHex };
+          if (!fields) return null;
+          let creatureFields: Record<string, unknown> | undefined;
+          let creatureId: string | undefined;
+          if (content?.type?.startsWith("0x2::dynamic_field::Field")) {
+            const value = fields.value as { fields?: Record<string, unknown> } | undefined;
+            creatureFields = value?.fields;
+            const nestedId = (creatureFields?.id as { id?: string } | undefined)?.id;
+            creatureId =
+              typeof nestedId === "string"
+                ? nestedId
+                : typeof fields.name === "string"
+                ? (fields.name as string)
+                : undefined;
+          } else {
+            creatureFields = fields as Record<string, unknown>;
+            creatureId = obj.data?.objectId;
+          }
+          if (!creatureFields || !creatureId) return null;
+          const owner =
+            typeof creatureFields.owner === "string" ? creatureFields.owner : undefined;
+          const level =
+            typeof creatureFields.level === "string" ? Number(creatureFields.level) : undefined;
+          const exp =
+            typeof creatureFields.exp === "string" ? Number(creatureFields.exp) : undefined;
+          const stage =
+            typeof creatureFields.stage === "string" ? Number(creatureFields.stage) : undefined;
+          const genomeHex = extractGenomeHex(creatureFields);
+          return {
+            id: creatureId,
+            owner,
+            key: keyByObjectId.get(obj.data?.objectId ?? "") ?? creatureId,
+            level,
+            exp,
+            stage,
+            genomeHex,
+          };
         })
         .filter((item): item is ArenaCreatureItem => Boolean(item));
-      setArenaCreatures(items);
+      const mine = account?.address
+        ? items.filter((item) => item.owner === account.address)
+        : [];
+      setArenaCreatures(mine);
     } catch {
       setArenaCreatures([]);
     }
@@ -1133,7 +1138,6 @@ export default function App() {
               ) : (
                 <div className="list compact">
                   {arenaCreatures.map((item) => {
-                    const isMine = item.owner === account?.address;
                     return (
                       <div key={item.id} className="list-item">
                       <div className="list-left">
@@ -1146,15 +1150,6 @@ export default function App() {
                         />
                         <div className="meta">
                           <div className="mono">{item.id}</div>
-                          <div className="stat-row">
-                            <span>
-                              {t("owner")}{" "}
-                              {item.owner
-                                ? `${item.owner.slice(0, 6)}...${item.owner.slice(-4)}`
-                                : "-"}
-                            </span>
-                            {isMine ? <span className="badge">{t("mine")}</span> : null}
-                          </div>
                           <div className="stat-row">
                             <span>
                               {t("levelShort")} {item.level ?? "-"}
@@ -1171,15 +1166,18 @@ export default function App() {
                       <div className="actions">
                         <button
                           className="ghost"
-                          onClick={() => setCreatureId(item.key ?? item.id)}
+                          disabled={!arenaId || !item.key}
+                          onClick={() =>
+                            exec(async () =>
+                              buildWithdrawArenaTx(
+                                packageId,
+                                await getArenaSharedRef(),
+                                item.key ?? item.id
+                              )
+                            )
+                          }
                         >
-                          {t("setA")}
-                        </button>
-                        <button
-                          className="ghost"
-                          onClick={() => setCreatureIdB(item.key ?? item.id)}
-                        >
-                          {t("setB")}
+                          {t("withdraw")}
                         </button>
                       </div>
                     </div>
