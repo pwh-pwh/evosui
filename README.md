@@ -33,6 +33,10 @@ A decentralized creature evolution game prototype on Sui. Core features include 
 - 🎨 Live frontend: auto loading, dynamic avatars, battle animation & history
 - 🌍 Multi-language: Chinese / English
 
+## 🖼️ Screenshots
+![Landing](image/%E5%90%AF%E5%8A%A8%E9%A1%B5.png)
+![Main](image/%E5%8A%9F%E8%83%BD%E4%B8%BB%E9%A1%B5.png)
+
 ## 📦 Structure
 - 📁 `evosui/`: Sui Move contracts
 - 💻 `frontend/`: Frontend UI (Vite + React + Tailwind + dApp Kit)

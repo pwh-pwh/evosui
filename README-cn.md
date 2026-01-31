@@ -33,6 +33,10 @@
 - 🎨 前端实时：自动加载生物列表、头像动态渲染、对战动画与记录
 - 🌍 多语言：中英切换
 
+## 🖼️ 界面预览
+![启动页](image/%E5%90%AF%E5%8A%A8%E9%A1%B5.png)
+![功能主页](image/%E5%8A%9F%E8%83%BD%E4%B8%BB%E9%A1%B5.png)
+
 ## 📦 目录结构
 - 📁 `evosui/`：Sui Move 合约
 - 💻 `frontend/`：前端游戏 UI（Vite + React + Tailwind + dApp Kit）
