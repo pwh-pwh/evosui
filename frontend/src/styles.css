@@ -237,6 +237,11 @@
     @apply flex flex-col items-center gap-1.5;
   }
 
+  .glow-avatar {
+    filter: drop-shadow(0 0 12px rgba(34, 244, 179, 0.45))
+      drop-shadow(0 0 22px rgba(88, 208, 255, 0.35));
+  }
+
   .avatar-button {
     @apply border-0 bg-transparent p-0 cursor-pointer;
   }
@@ -291,6 +296,10 @@
 
   .modal-body {
     @apply flex flex-col gap-2.5 overflow-auto;
+  }
+
+  .history-avatar {
+    @apply flex items-center justify-center py-3;
   }
 
   .history-row {

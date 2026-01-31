@@ -920,13 +920,15 @@ export default function App() {
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.15 * idx, duration: 0.7 }}
                   >
-                    <CreatureAvatar
-                      genomeHex={pet.genomeHex}
-                      seedHex={pet.seedHex}
-                      level={pet.level}
-                      stage={pet.stage}
-                      size={110}
-                    />
+                    <div className="glow-avatar">
+                      <CreatureAvatar
+                        genomeHex={pet.genomeHex}
+                        seedHex={pet.seedHex}
+                        level={pet.level}
+                        stage={pet.stage}
+                        size={110}
+                      />
+                    </div>
                   </motion.div>
                 ))}
               </div>
@@ -950,13 +952,15 @@ export default function App() {
               transition={{ type: "spring", stiffness: 120, damping: 14 }}
             >
               <div className="mint-fx-title">{t("mintReveal")}</div>
-              <CreatureAvatar
-                genomeHex={mintedCreature.genomeHex ?? "0x"}
-                seedHex={mintedCreature.id}
-                level={mintedCreature.level ?? 1}
-                stage={mintedCreature.stage ?? 0}
-                size={140}
-              />
+              <div className="glow-avatar">
+                <CreatureAvatar
+                  genomeHex={mintedCreature.genomeHex ?? "0x"}
+                  seedHex={mintedCreature.id}
+                  level={mintedCreature.level ?? 1}
+                  stage={mintedCreature.stage ?? 0}
+                  size={140}
+                />
+              </div>
               <div className="mint-fx-id">{mintedCreature.id}</div>
               <div className="hint">{t("mintRevealHint")}</div>
             </motion.div>
@@ -1117,14 +1121,16 @@ export default function App() {
                       }
                       title={t("clickAvatarHint")}
                     >
-                      <CreatureAvatar
-                        genomeHex={item.genomeHex ?? "0x"}
-                        seedHex={item.id}
-                        level={item.level ?? 1}
-                        stage={item.stage ?? 0}
-                        size={64}
-                        label={`${t("levelShort")} ${item.level ?? "-"}`}
-                      />
+                      <div className="glow-avatar">
+                        <CreatureAvatar
+                          genomeHex={item.genomeHex ?? "0x"}
+                          seedHex={item.id}
+                          level={item.level ?? 1}
+                          stage={item.stage ?? 0}
+                          size={64}
+                          label={`${t("levelShort")} ${item.level ?? "-"}`}
+                        />
+                      </div>
                     </button>
                     <div className="meta">
                       <div className="mono">{item.id}</div>
@@ -1302,24 +1308,28 @@ export default function App() {
           <div className={`battle-stage ${battleAnimating ? "is-animating" : ""}`}>
             <div className="battle-orb a">
               {selectedCreature ? (
-                <CreatureAvatar
-                  genomeHex={selectedCreature.genomeHex ?? "0x"}
-                  seedHex={selectedCreature.id}
-                  level={selectedCreature.level ?? 1}
-                  stage={selectedCreature.stage ?? 0}
-                  size={40}
-                />
+                <div className="glow-avatar">
+                  <CreatureAvatar
+                    genomeHex={selectedCreature.genomeHex ?? "0x"}
+                    seedHex={selectedCreature.id}
+                    level={selectedCreature.level ?? 1}
+                    stage={selectedCreature.stage ?? 0}
+                    size={40}
+                  />
+                </div>
               ) : null}
             </div>
             <div className="battle-orb b">
               {selectedCreatureB ? (
-                <CreatureAvatar
-                  genomeHex={selectedCreatureB.genomeHex ?? "0x"}
-                  seedHex={selectedCreatureB.id}
-                  level={selectedCreatureB.level ?? 1}
-                  stage={selectedCreatureB.stage ?? 0}
-                  size={40}
-                />
+                <div className="glow-avatar">
+                  <CreatureAvatar
+                    genomeHex={selectedCreatureB.genomeHex ?? "0x"}
+                    seedHex={selectedCreatureB.id}
+                    level={selectedCreatureB.level ?? 1}
+                    stage={selectedCreatureB.stage ?? 0}
+                    size={40}
+                  />
+                </div>
               ) : null}
             </div>
             <div className="battle-spark" />
@@ -1403,13 +1413,15 @@ export default function App() {
                     return (
                       <div key={item.id} className="list-item">
                       <div className="list-left">
-                        <CreatureAvatar
-                          genomeHex={item.genomeHex ?? "0x"}
-                          seedHex={item.id}
-                          level={item.level ?? 1}
-                          stage={item.stage ?? 0}
-                          size={40}
-                        />
+                        <div className="glow-avatar">
+                          <CreatureAvatar
+                            genomeHex={item.genomeHex ?? "0x"}
+                            seedHex={item.id}
+                            level={item.level ?? 1}
+                            stage={item.stage ?? 0}
+                            size={40}
+                          />
+                        </div>
                         <div className="meta">
                           <div className="mono">{item.id}</div>
                           <div className="stat-row">
@@ -1493,39 +1505,69 @@ export default function App() {
               </button>
             </div>
             <div className="modal-body">
-              {battleHistory
-                .filter((h) => h.a === activeHistoryId || h.b === activeHistoryId)
-                .slice(0, 20)
-                .map((h) => {
-                  const role = h.a === activeHistoryId ? "A" : "B";
-                  const result: string =
-                    h.winner === "?"
-                      ? "?"
-                      : h.winner === "T"
-                      ? t("draw")
-                      : h.winner === role
-                      ? t("aWin")
-                      : t("bWin");
-                  const timeLabel = new Date(h.ts).toLocaleString(
-                    lang === "zh" ? "zh-CN" : "en-US"
-                  );
-                  return (
-                    <div key={h.id} className="history-row">
-                      <span className="badge">{result}</span>
-                      <span className="hint">{timeLabel}</span>
-                      <span className="mono">{role === "A" ? h.b : h.a}</span>
-                      <span className="hint">
-                        {t("power")} {role === "A" ? h.powerA ?? "-" : h.powerB ?? "-"} ↔{" "}
-                        {role === "A" ? h.powerB ?? "-" : h.powerA ?? "-"}
-                      </span>
-                      <span className="hint">
-                        {t("expShort")} +{role === "A" ? h.expA ?? "-" : h.expB ?? "-"}
-                      </span>
-                    </div>
-                  );
-                })}
-              {battleHistory.filter((h) => h.a === activeHistoryId || h.b === activeHistoryId)
-                .length === 0 ? <p className="hint">{t("noBattleHistory")}</p> : null}
+              {(() => {
+                const creature =
+                  creatures.find((c) => c.id === activeHistoryId) ||
+                  arenaCreatures.find((c) => c.id === activeHistoryId);
+                const history = battleHistory
+                  .filter((h) => h.a === activeHistoryId || h.b === activeHistoryId)
+                  .slice(0, 20);
+                return (
+                  <>
+                    <motion.div
+                      className="history-avatar"
+                      initial={{ opacity: 0, scale: 0.4, rotate: 0 }}
+                      animate={{ opacity: 1, scale: 1, rotate: 540 }}
+                      transition={{ duration: 0.8, ease: "easeOut" }}
+                    >
+                      <div className="glow-avatar">
+                        <CreatureAvatar
+                          genomeHex={creature?.genomeHex ?? "0x"}
+                          seedHex={activeHistoryId}
+                          level={creature?.level ?? 1}
+                          stage={creature?.stage ?? 0}
+                          size={120}
+                        />
+                      </div>
+                    </motion.div>
+                    <motion.div
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.6, duration: 0.5 }}
+                    >
+                      {history.map((h) => {
+                        const role = h.a === activeHistoryId ? "A" : "B";
+                        const result: string =
+                          h.winner === "?"
+                            ? "?"
+                            : h.winner === "T"
+                            ? t("draw")
+                            : h.winner === role
+                            ? t("aWin")
+                            : t("bWin");
+                        const timeLabel = new Date(h.ts).toLocaleString(
+                          lang === "zh" ? "zh-CN" : "en-US"
+                        );
+                        return (
+                          <div key={h.id} className="history-row">
+                            <span className="badge">{result}</span>
+                            <span className="hint">{timeLabel}</span>
+                            <span className="mono">{role === "A" ? h.b : h.a}</span>
+                            <span className="hint">
+                              {t("power")} {role === "A" ? h.powerA ?? "-" : h.powerB ?? "-"} ↔{" "}
+                              {role === "A" ? h.powerB ?? "-" : h.powerA ?? "-"}
+                            </span>
+                            <span className="hint">
+                              {t("expShort")} +{role === "A" ? h.expA ?? "-" : h.expB ?? "-"}
+                            </span>
+                          </div>
+                        );
+                      })}
+                      {history.length === 0 ? <p className="hint">{t("noBattleHistory")}</p> : null}
+                    </motion.div>
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>
@@ -1538,24 +1580,28 @@ export default function App() {
             <div className="battle-stage is-animating battle-stage-modal">
               <div className="battle-orb a">
                 {selectedCreature ? (
-                  <CreatureAvatar
-                    genomeHex={selectedCreature.genomeHex ?? "0x"}
-                    seedHex={selectedCreature.id}
-                    level={selectedCreature.level ?? 1}
-                    stage={selectedCreature.stage ?? 0}
-                    size={56}
-                  />
+                  <div className="glow-avatar">
+                    <CreatureAvatar
+                      genomeHex={selectedCreature.genomeHex ?? "0x"}
+                      seedHex={selectedCreature.id}
+                      level={selectedCreature.level ?? 1}
+                      stage={selectedCreature.stage ?? 0}
+                      size={56}
+                    />
+                  </div>
                 ) : null}
               </div>
               <div className="battle-orb b">
                 {selectedCreatureB ? (
-                  <CreatureAvatar
-                    genomeHex={selectedCreatureB.genomeHex ?? "0x"}
-                    seedHex={selectedCreatureB.id}
-                    level={selectedCreatureB.level ?? 1}
-                    stage={selectedCreatureB.stage ?? 0}
-                    size={56}
-                  />
+                  <div className="glow-avatar">
+                    <CreatureAvatar
+                      genomeHex={selectedCreatureB.genomeHex ?? "0x"}
+                      seedHex={selectedCreatureB.id}
+                      level={selectedCreatureB.level ?? 1}
+                      stage={selectedCreatureB.stage ?? 0}
+                      size={56}
+                    />
+                  </div>
                 ) : null}
               </div>
               <div className="battle-spark" />
