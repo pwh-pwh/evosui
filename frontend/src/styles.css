@@ -381,6 +381,25 @@
   .launch-pet:nth-child(4) {
     animation-delay: -6s;
   }
+
+  .mint-fx {
+    @apply fixed inset-0 z-40 flex items-center justify-center bg-black/70;
+    backdrop-filter: blur(6px);
+  }
+
+  .mint-fx-card {
+    @apply flex flex-col items-center gap-3 rounded-3xl border border-border px-8 py-6 bg-[#0b1120];
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+    min-width: min(360px, 86vw);
+  }
+
+  .mint-fx-title {
+    @apply text-sm tracking-[0.2em] uppercase text-accent font-mono;
+  }
+
+  .mint-fx-id {
+    @apply text-xs text-muted font-mono max-w-[280px] text-center break-all;
+  }
 }
 
 @layer utilities {

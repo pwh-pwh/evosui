@@ -123,6 +123,8 @@ const I18N = {
     genomeHex: "Genome Hex",
     createCreature: "创建 Creature",
     mintHint: "交易完成后在钱包里找到新对象 ID，再填到 Creature ID。",
+    mintReveal: "新生命体生成",
+    mintRevealHint: "已在链上铸造，选择后可开始培养。",
     organsSkills: "器官 / 技能",
     kind: "Kind",
     rarity: "Rarity",
@@ -225,6 +227,8 @@ const I18N = {
     genomeHex: "Genome Hex",
     createCreature: "Create Creature",
     mintHint: "After the tx, find the new object ID in wallet and paste into Creature ID.",
+    mintReveal: "Creature Awakened",
+    mintRevealHint: "Minted on-chain. Select it to start training.",
     organsSkills: "Organs / Skills",
     kind: "Kind",
     rarity: "Rarity",
@@ -359,6 +363,8 @@ export default function App() {
   const [result, setResult] = useState<ExecResult>({});
   const [snapshot, setSnapshot] = useState<string>("");
   const [creatureJson, setCreatureJson] = useState<string>("");
+  const [mintedCreature, setMintedCreature] = useState<CreatureItem | null>(null);
+  const [showMintFx, setShowMintFx] = useState(false);
 
   useEffect(() => {
     localStorage.setItem("evosui.lang", lang);
@@ -421,6 +427,47 @@ export default function App() {
         transaction: tx,
       });
       setResult({ digest: res?.digest, raw: res });
+    } catch (e) {
+      setResult({ error: (e as Error).message });
+    }
+  }
+
+  async function mintCreatureWithFx() {
+    if (!canTransact || !account?.address) {
+      setResult({ error: t("connectWalletSetPackage") });
+      return;
+    }
+    try {
+      const tx = buildMintTx(packageId, genomeHex, account.address);
+      const res = await signAndExecute({ transaction: tx });
+      setResult({ digest: res?.digest, raw: res });
+      if (res?.digest) {
+        const txBlock = await client.getTransactionBlock({
+          digest: res.digest,
+          options: { showObjectChanges: true },
+        });
+        const created = txBlock.objectChanges?.find(
+          (change) =>
+            change.type === "created" &&
+            "objectType" in change &&
+            typeof change.objectType === "string" &&
+            change.objectType.includes("::evosui::Creature")
+        );
+        if (created && "objectId" in created) {
+          const item: CreatureItem = {
+            id: String(created.objectId),
+            level: 1,
+            exp: 0,
+            stage: 0,
+            genomeHex,
+          };
+          setMintedCreature(item);
+          setShowMintFx(true);
+          setCreatureId(String(created.objectId));
+          loadCreatures();
+          setTimeout(() => setShowMintFx(false), 2600);
+        }
+      }
     } catch (e) {
       setResult({ error: (e as Error).message });
     }
@@ -872,6 +919,35 @@ export default function App() {
           </motion.div>
         ) : null}
       </AnimatePresence>
+      <AnimatePresence>
+        {showMintFx && mintedCreature ? (
+          <motion.div
+            className="mint-fx"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="mint-fx-card"
+              initial={{ y: 120, scale: 0.8, opacity: 0 }}
+              animate={{ y: 0, scale: 1, opacity: 1 }}
+              exit={{ y: -40, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 120, damping: 14 }}
+            >
+              <div className="mint-fx-title">{t("mintReveal")}</div>
+              <CreatureAvatar
+                genomeHex={mintedCreature.genomeHex ?? "0x"}
+                seedHex={mintedCreature.id}
+                level={mintedCreature.level ?? 1}
+                stage={mintedCreature.stage ?? 0}
+                size={140}
+              />
+              <div className="mint-fx-id">{mintedCreature.id}</div>
+              <div className="hint">{t("mintRevealHint")}</div>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
       <header className="hero">
         <div>
           <div className="tag">{t("tag")}</div>
@@ -1079,9 +1155,7 @@ export default function App() {
             />
           </label>
           <button
-            onClick={() =>
-              exec(() => buildMintTx(packageId, genomeHex, account!.address))
-            }
+            onClick={mintCreatureWithFx}
           >
             {t("createCreature")}
           </button>
