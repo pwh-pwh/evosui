@@ -142,6 +142,19 @@ const I18N = {
     depositB: "B 入场",
     withdrawA: "A 取回",
     withdrawB: "B 取回",
+    battleCheck: "对战准备状态",
+    ready: "已就绪",
+    missing: "未满足",
+    unknown: "未知",
+    walletReady: "钱包连接",
+    packageReady: "Package 已填写",
+    arenaReady: "Arena 已填写",
+    aSelected: "已选择 A",
+    bSelected: "已选择 B",
+    aInArena: "A 已入场",
+    bInArena: "B 已入场",
+    battleReady: "可发起对战",
+    arenaNote: "Arena 模式下，仅能确认当前钱包已入场的生物。",
     battleStart: "发起对战",
     battleHistoryHint: "对战记录来自链上事件（需合约已升级）。",
     snapshot: "只读快照",
@@ -227,6 +240,19 @@ const I18N = {
     depositB: "Deposit B",
     withdrawA: "Withdraw A",
     withdrawB: "Withdraw B",
+    battleCheck: "Battle Readiness",
+    ready: "Ready",
+    missing: "Missing",
+    unknown: "Unknown",
+    walletReady: "Wallet connected",
+    packageReady: "Package set",
+    arenaReady: "Arena set",
+    aSelected: "A selected",
+    bSelected: "B selected",
+    aInArena: "A deposited",
+    bInArena: "B deposited",
+    battleReady: "Ready to battle",
+    arenaNote: "In Arena mode we only verify the current wallet deposits.",
     battleStart: "Start Battle",
     battleHistoryHint: "History is sourced from on-chain events (requires upgraded package).",
     snapshot: "Read-only Snapshot",
@@ -345,6 +371,16 @@ export default function App() {
       : false;
   const canBattle =
     Boolean(creatureId && creatureIdB) && creatureId !== creatureIdB;
+  const arenaCreatureKeys = useMemo(() => {
+    const keys = arenaCreatures.map((c) => c.key ?? c.id);
+    return new Set(keys);
+  }, [arenaCreatures]);
+  const arenaMode = Boolean(arenaId);
+  const aSelected = Boolean(creatureId);
+  const bSelected = Boolean(creatureIdB);
+  const aInArena = arenaMode && aSelected ? arenaCreatureKeys.has(creatureId) : false;
+  const bInArena = arenaMode && bSelected ? arenaCreatureKeys.has(creatureIdB) : false;
+  const battleReady = canBattle && (!arenaMode || (aInArena && bInArena));
 
   const headerStatus = useMemo(() => {
     if (!account?.address) return t("disconnected");
@@ -833,6 +869,47 @@ export default function App() {
           <button className="ghost" onClick={loadCreature}>
             {t("readCreature")}
           </button>
+        </div>
+
+        <div className="card">
+          <h2>{t("battleCheck")}</h2>
+          <div className="stat-row">
+            <span>{t("walletReady")}</span>
+            <span>{account?.address ? t("ready") : t("missing")}</span>
+          </div>
+          <div className="stat-row">
+            <span>{t("packageReady")}</span>
+            <span>{packageId ? t("ready") : t("missing")}</span>
+          </div>
+          <div className="stat-row">
+            <span>{t("aSelected")}</span>
+            <span>{aSelected ? t("ready") : t("missing")}</span>
+          </div>
+          <div className="stat-row">
+            <span>{t("bSelected")}</span>
+            <span>{bSelected ? t("ready") : t("missing")}</span>
+          </div>
+          {arenaMode ? (
+            <>
+              <div className="stat-row">
+                <span>{t("arenaReady")}</span>
+                <span>{arenaId ? t("ready") : t("missing")}</span>
+              </div>
+              <div className="stat-row">
+                <span>{t("aInArena")}</span>
+                <span>{aSelected ? (aInArena ? t("ready") : t("missing")) : t("missing")}</span>
+              </div>
+              <div className="stat-row">
+                <span>{t("bInArena")}</span>
+                <span>{bSelected ? (bInArena ? t("ready") : t("unknown")) : t("missing")}</span>
+              </div>
+              <p className="hint">{t("arenaNote")}</p>
+            </>
+          ) : null}
+          <div className="stat-row">
+            <span>{t("battleReady")}</span>
+            <span>{battleReady ? t("ready") : t("missing")}</span>
+          </div>
         </div>
 
         <div className="card">
