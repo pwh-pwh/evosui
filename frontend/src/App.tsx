@@ -989,6 +989,7 @@ export default function App() {
 
       <section className="grid-layout">
         <div className="card">
+          <div className="card-glyph glyph-orbit" aria-hidden="true" />
           <h2>{t("config")}</h2>
           <label>
             {t("packageId")}
@@ -1056,6 +1057,7 @@ export default function App() {
         </div>
 
         <div className="card">
+          <div className="card-glyph glyph-grid" aria-hidden="true" />
           <h2>{t("battleCheck")}</h2>
           <div className="stat-row">
             <span>{t("walletReady")}</span>
@@ -1097,6 +1099,7 @@ export default function App() {
         </div>
 
         <div className="card">
+          <div className="card-glyph glyph-waves" aria-hidden="true" />
           <h2>{t("myCreatures")}</h2>
           <button className="ghost" onClick={loadCreatures}>
             {t("refreshList")}
@@ -1171,6 +1174,7 @@ export default function App() {
         </div>
 
         <div className="card">
+          <div className="card-glyph glyph-spiral" aria-hidden="true" />
           <h2>{t("mint")}</h2>
           <label>
             {t("genomeHex")}
@@ -1189,6 +1193,7 @@ export default function App() {
         </div>
 
         <div className="card">
+          <div className="card-glyph glyph-pulse" aria-hidden="true" />
           <h2>{t("organsSkills")}</h2>
           <div className="row">
             <label>
@@ -1263,6 +1268,7 @@ export default function App() {
         </div>
 
         <div className="card">
+          <div className="card-glyph glyph-hex" aria-hidden="true" />
           <h2>{t("growth")}</h2>
           <label>
             {t("foodExp")}
@@ -1302,6 +1308,7 @@ export default function App() {
         </div>
 
         <div className="card">
+          <div className="card-glyph glyph-comet" aria-hidden="true" />
           <h2>{t("battle")}</h2>
           <p className="hint">{t("battleHint")}</p>
           {arenaId ? <p className="hint">{t("arenaHint")}</p> : null}
@@ -1468,6 +1475,7 @@ export default function App() {
         </div>
 
         <div className="card">
+          <div className="card-glyph glyph-sig" aria-hidden="true" />
           <h2>{t("snapshot")}</h2>
           <p className="hint">{t("snapshotHint")}</p>
           <button className="ghost" onClick={devInspectSnapshot}>
