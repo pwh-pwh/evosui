@@ -1,0 +1,2 @@
+export const DEFAULT_PACKAGE_ID =
+  "0x6253c8f6a7e5f4b2ae407198bf88c42219fc954aecb33d3b2455fe9bf3921d91";
